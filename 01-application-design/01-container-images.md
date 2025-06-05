@@ -72,17 +72,17 @@ RUN echo "Hello, World!" > /usr/local/apache2/htdocs/index.html
 <tab name="Docker">
 
 ```bash
-$ docker build -t simpleapp .
+$ docker build -t apache-hello-world .
 STEP 1/2: FROM httpd:2.4
 STEP 2/2: RUN echo "Hello, World!" > /usr/local/apache2/htdocs/index.html
 Successfully built ef4b14a72d02
-Successfully tagged simpleapp:latest
+Successfully tagged apache-hello-world:latest
 ```
 </tab>
 <tab name="containerd/nerdctl">
 
 ```bash
-$ nerdctl build -t simpleapp .
+$ nerdctl build -t apache-hello-world .
 [+] Building 2.3s (5/5) FINISHED
  => [internal] load build definition from Dockerfile
  => => transferring dockerfile: 115B
@@ -93,7 +93,7 @@ $ nerdctl build -t simpleapp .
  => exporting to image
  => => exporting layers
  => => writing image sha256:ef4b14a72d02ae0577eb0632d084c057777725c279e12ccf5b0c6e4ff5fd598b
- => => naming to docker.io/library/simpleapp:latest
+ => => naming to docker.io/library/apache-hello-world:latest
 ```
 </tab>
 </tabs>
@@ -105,18 +105,18 @@ $ nerdctl build -t simpleapp .
 
 ```bash
 $ docker images
-REPOSITORY    TAG       IMAGE ID       CREATED         SIZE
-simpleapp     latest    ef4b14a72d02   8 seconds ago   148MB
-httpd         2.4       98f93cd0ec3b   7 days ago      148MB
+REPOSITORY           TAG       IMAGE ID       CREATED         SIZE
+apache-hello-world   latest    ef4b14a72d02   8 seconds ago   148MB
+httpd               2.4       98f93cd0ec3b   7 days ago      148MB
 ```
 </tab>
 <tab name="containerd/nerdctl">
 
 ```bash
 $ nerdctl images
-REPOSITORY    TAG       IMAGE ID       CREATED         SIZE
-simpleapp     latest    ef4b14a72d02   8 seconds ago   148MB
-httpd         2.4       98f93cd0ec3b   7 days ago      148MB
+REPOSITORY           TAG       IMAGE ID       CREATED         SIZE
+apache-hello-world   latest    ef4b14a72d02   8 seconds ago   148MB
+httpd               2.4       98f93cd0ec3b   7 days ago      148MB
 ```
 </tab>
 </tabs>
@@ -127,14 +127,14 @@ httpd         2.4       98f93cd0ec3b   7 days ago      148MB
 <tab name="Docker">
 
 ```bash
-$ docker image inspect simpleapp --format '{{.RootFS.Layers}}'
+$ docker image inspect apache-hello-world --format '{{.RootFS.Layers}}'
 [sha256:ad6562704f37 sha256:c234616e1912 sha256:c23a797b2d04 sha256:ede2e092faf0 sha256:971c2cdf3872 sha256:61644e82ef1f]
 ```
 </tab>
 <tab name="containerd/nerdctl">
 
 ```bash
-$ nerdctl image inspect simpleapp -f '{{.RootFS.Layers}}'
+$ nerdctl image inspect apache-hello-world -f '{{.RootFS.Layers}}'
 [sha256:ad6562704f37 sha256:c234616e1912 sha256:c23a797b2d04 sha256:ede2e092faf0 sha256:971c2cdf3872 sha256:61644e82ef1f]
 ```
 </tab>
@@ -145,14 +145,14 @@ $ nerdctl image inspect simpleapp -f '{{.RootFS.Layers}}'
 <tabs>
 <tab name="Docker">
 
-- `docker build -t simpleapp .` - Builds an image from the Dockerfile in the current directory and tags it as "simpleapp"
+- `docker build -t apache-hello-world .` - Builds an image from the Dockerfile in the current directory and tags it with a descriptive name
 - `docker images` - Lists all images available locally
 - `docker image inspect` - Shows detailed information about the image, including layers
 - The output shows that our custom image adds just one small layer on top of the httpd base image
 </tab>
 <tab name="containerd/nerdctl">
 
-- `nerdctl build -t simpleapp .` - Builds an image from the Dockerfile in the current directory and tags it as "simpleapp"
+- `nerdctl build -t apache-hello-world .` - Builds an image from the Dockerfile in the current directory and tags it with a descriptive name
 - `nerdctl images` - Lists all images available locally
 - `nerdctl image inspect` - Shows detailed information about the image, including layers
 - The output shows that our custom image adds just one small layer on top of the httpd base image
@@ -179,14 +179,14 @@ $ nerdctl image inspect simpleapp -f '{{.RootFS.Layers}}'
 <tab name="Docker">
 
 ```bash
-$ docker run -d --name test -p 8080:80 simpleapp
+$ docker run -d --name apache-web-server -p 8080:80 apache-hello-world
 2f3d7d613ea6ba19703811d30704d4025123c7302ff6fa295affc9bd30e532f8
 ```
 </tab>
 <tab name="containerd/nerdctl">
 
 ```bash
-$ nerdctl run -d --name test -p 8080:80 simpleapp
+$ nerdctl run -d --name apache-web-server -p 8080:80 apache-hello-world
 2f3d7d613ea6ba19703811d30704d4025123c7302ff6fa295affc9bd30e532f8
 ```
 </tab>
@@ -199,16 +199,16 @@ $ nerdctl run -d --name test -p 8080:80 simpleapp
 
 ```bash
 $ docker ps
-CONTAINER ID   IMAGE       COMMAND            CREATED        STATUS        PORTS                  NAMES
-2f3d7d613ea6   simpleapp   "httpd-foreground" 5 seconds ago  Up 5 seconds  0.0.0.0:8080->80/tcp   test
+CONTAINER ID   IMAGE                COMMAND            CREATED        STATUS        PORTS                  NAMES
+2f3d7d613ea6   apache-hello-world   "httpd-foreground" 5 seconds ago  Up 5 seconds  0.0.0.0:8080->80/tcp   apache-web-server
 ```
 </tab>
 <tab name="containerd/nerdctl">
 
 ```bash
 $ nerdctl ps
-CONTAINER ID   IMAGE       COMMAND            CREATED        STATUS        PORTS                  NAMES
-2f3d7d613ea6   simpleapp   "httpd-foreground" 5 seconds ago  Up 5 seconds  0.0.0.0:8080->80/tcp   test
+CONTAINER ID   IMAGE                COMMAND            CREATED        STATUS        PORTS                  NAMES
+2f3d7d613ea6   apache-hello-world   "httpd-foreground" 5 seconds ago  Up 5 seconds  0.0.0.0:8080->80/tcp   apache-web-server
 ```
 </tab>
 </tabs>
@@ -226,17 +226,17 @@ Hello, World!
 <tab name="Docker">
 
 - `docker run -d` - Runs the container in detached mode (in the background)
-- `--name test` - Gives the container a name for easy reference
+- `--name apache-web-server` - Gives the container a descriptive name for easy reference
 - `-p 8080:80` - Maps port 8080 on the host to port 80 in the container
-- `simpleapp` - Specifies the image to use
+- `apache-hello-world` - Specifies the image to use
 - `docker ps` - Shows running containers
 </tab>
 <tab name="containerd/nerdctl">
 
 - `nerdctl run -d` - Runs the container in detached mode (in the background)
-- `--name test` - Gives the container a name for easy reference
+- `--name apache-web-server` - Gives the container a descriptive name for easy reference
 - `-p 8080:80` - Maps port 8080 on the host to port 80 in the container
-- `simpleapp` - Specifies the image to use
+- `apache-hello-world` - Specifies the image to use
 - `nerdctl ps` - Shows running containers
 </tab>
 </tabs>
@@ -248,17 +248,17 @@ Hello, World!
 <tabs>
 <tab name="Docker">
 
-- `docker stop test` - Stops the running container
-- `docker start test` - Starts a stopped container
-- `docker rm test` - Removes the container (must be stopped first)
-- `docker logs test` - Shows the logs from the container
+- `docker stop apache-web-server` - Stops the running container
+- `docker start apache-web-server` - Starts a stopped container
+- `docker rm apache-web-server` - Removes the container (must be stopped first)
+- `docker logs apache-web-server` - Shows the logs from the container
 </tab>
 <tab name="containerd/nerdctl">
 
-- `nerdctl stop test` - Stops the running container
-- `nerdctl start test` - Starts a stopped container
-- `nerdctl rm test` - Removes the container (must be stopped first)
-- `nerdctl logs test` - Shows the logs from the container
+- `nerdctl stop apache-web-server` - Stops the running container
+- `nerdctl start apache-web-server` - Starts a stopped container
+- `nerdctl rm apache-web-server` - Removes the container (must be stopped first)
+- `nerdctl logs apache-web-server` - Shows the logs from the container
 </tab>
 </tabs>
 
