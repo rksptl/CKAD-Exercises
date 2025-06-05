@@ -23,6 +23,17 @@ This section covers Resource Requirements, Limits, and Quotas in Kubernetes, whi
 
 **Step 1: Create a Pod with resource requests and limits**
 
+Option 1: Using imperative command:
+
+```bash
+# Create a pod with resource requests and limits using imperative command
+kubectl run resource-demo --image=nginx \
+  --requests=cpu=250m,memory=64Mi \
+  --limits=cpu=500m,memory=128Mi
+```
+
+Option 2: Using a manifest file:
+
 Create a file named `pod-resources.yaml`:
 
 ```yaml
@@ -81,6 +92,22 @@ The scheduler uses the requests to find a node with enough resources, while the 
 <p>
 
 **Step 1: Create a Pod with CPU resources specified in different units**
+
+> Note: For multi-container pods with different resource specifications, a manifest file is required as imperative commands cannot create multiple containers in a single pod.
+
+For a single container with CPU resources:
+
+```bash
+# Create a pod with CPU resources specified in millicores
+kubectl run cpu-millicores-demo --image=busybox --command -- sh -c "sleep 3600" \
+  --requests=cpu=250m --limits=cpu=500m
+
+# Create another pod with CPU resources specified in cores
+kubectl run cpu-cores-demo --image=busybox --command -- sh -c "sleep 3600" \
+  --requests=cpu=0.25 --limits=cpu=0.5
+```
+
+For multiple containers in a single pod (requires manifest):
 
 Create a file named `cpu-units.yaml`:
 
@@ -194,6 +221,7 @@ This demonstrates the different ways to specify CPU and memory resources in Kube
 **Step 1: Create a namespace**
 
 ```bash
+# This is an imperative command to create a namespace
 kubectl create namespace quota-demo
 ```
 
@@ -449,6 +477,17 @@ This demonstrates how limit ranges can be used to enforce resource constraints a
 
 **Step 1: Create a Pod with Guaranteed QoS class**
 
+Option 1: Using imperative command:
+
+```bash
+# Create a pod with Guaranteed QoS class (requests equal to limits)
+kubectl run guaranteed-qos --image=nginx \
+  --requests=memory=256Mi,cpu=500m \
+  --limits=memory=256Mi,cpu=500m
+```
+
+Option 2: Using a manifest file:
+
 Create a file named `guaranteed-qos.yaml`:
 
 ```yaml
@@ -477,6 +516,17 @@ kubectl apply -f guaranteed-qos.yaml
 
 **Step 2: Create a Pod with Burstable QoS class**
 
+Option 1: Using imperative command:
+
+```bash
+# Create a pod with Burstable QoS class (requests less than limits)
+kubectl run burstable-qos --image=nginx \
+  --requests=memory=128Mi,cpu=250m \
+  --limits=memory=256Mi,cpu=500m
+```
+
+Option 2: Using a manifest file:
+
 Create a file named `burstable-qos.yaml`:
 
 ```yaml
@@ -504,6 +554,15 @@ kubectl apply -f burstable-qos.yaml
 ```
 
 **Step 3: Create a Pod with BestEffort QoS class**
+
+Option 1: Using imperative command (simplest approach):
+
+```bash
+# Create a pod with BestEffort QoS class (no resource requests or limits)
+kubectl run besteffort-qos --image=nginx
+```
+
+Option 2: Using a manifest file:
 
 Create a file named `besteffort-qos.yaml`:
 

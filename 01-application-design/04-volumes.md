@@ -69,9 +69,12 @@ spec:
 
 **Step 2: Create the Pod**
 
+Option 1: Using a manifest file (declarative approach):
 ```bash
 kubectl apply -f volume-share-pod.yaml
 ```
+
+> Note: For multi-container pods with shared volumes, a manifest file is required as there is no direct imperative command to create this configuration.
 
 **Step 3: Verify that the containers are sharing data**
 
@@ -123,6 +126,8 @@ spec:
 kubectl apply -f task-pv.yaml
 ```
 
+> Note: PersistentVolumes must be created using manifest files as there is no imperative command to create them with all the necessary specifications.
+
 **Step 3: Verify the PersistentVolume was created**
 
 ```bash
@@ -169,8 +174,14 @@ spec:
 
 **Step 2: Create the PersistentVolumeClaim**
 
+Option 1: Using a manifest file (declarative approach):
 ```bash
 kubectl apply -f task-pvc.yaml
+```
+
+Option 2: Using imperative commands:
+```bash
+kubectl create pvc task-pvc --access-mode=ReadWriteOnce --storage-request=500Mi
 ```
 
 **Step 3: Verify the PersistentVolumeClaim was created and bound**
@@ -223,9 +234,21 @@ spec:
 
 **Step 2: Create the Pod**
 
+Option 1: Using a manifest file (declarative approach):
 ```bash
 kubectl apply -f task-pod.yaml
 ```
+
+Option 2: Using imperative commands (limited functionality):
+```bash
+# Create a basic pod with a volume mount
+kubectl run task-pod --image=nginx --port=80 --dry-run=client -o yaml > task-pod.yaml
+# You'll need to manually edit the YAML to add the PVC volume
+# Then apply the modified YAML
+kubectl apply -f task-pod.yaml
+```
+
+> Note: While you can create a basic pod imperatively, adding volume mounts with PVCs requires editing the YAML or using a manifest file directly.
 
 **Step 3: Verify the Pod is running**
 
@@ -296,6 +319,8 @@ spec:
 ```bash
 kubectl apply -f new-task-pod.yaml
 ```
+
+> Note: For pods with persistent volume claims, a manifest file provides the clearest definition of the storage requirements.
 
 **Step 5: Verify the file still exists**
 

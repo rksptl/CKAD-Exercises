@@ -28,6 +28,8 @@ ConfigMaps allow you to decouple configuration artifacts from image content to k
 kubectl create configmap app-config --from-literal=APP_ENV=production --from-literal=APP_DEBUG=false
 ```
 
+> Note: This is already using the imperative command syntax, which is the recommended approach for the CKAD exam.
+
 **Step 2: Verify the ConfigMap**
 
 ```bash
@@ -47,6 +49,8 @@ data:
 ```
 
 **Step 3: Create a Pod that uses the ConfigMap as environment variables**
+
+Option 1: Using a manifest file (declarative approach):
 
 Create a file named `pod-with-configmap-env.yaml`:
 
@@ -79,6 +83,16 @@ Apply the configuration:
 ```bash
 kubectl apply -f pod-with-configmap-env.yaml
 ```
+
+Option 2: Using imperative commands (for simple cases):
+```bash
+kubectl run configmap-env-pod --image=busybox --restart=Never \
+  --env="APP_ENV=$(kubectl get configmap app-config -o jsonpath='{.data.APP_ENV}')" \
+  --env="APP_DEBUG=$(kubectl get configmap app-config -o jsonpath='{.data.APP_DEBUG}')" \
+  -- sh -c "echo APP_ENV=$APP_ENV && echo APP_DEBUG=$APP_DEBUG && sleep 3600"
+```
+
+> Note: For complex environment variable configurations from ConfigMaps, the declarative approach is often clearer, but the imperative command can be useful for quick testing.
 
 **Step 4: Check the Pod logs to verify the environment variables**
 
@@ -132,6 +146,8 @@ Create a file named `feature-flags.json`:
 ```bash
 kubectl create configmap app-config-files --from-file=app.properties --from-file=feature-flags.json
 ```
+
+> Note: This is using the imperative command syntax, which is ideal for creating ConfigMaps from files.
 
 **Step 3: Verify the ConfigMap**
 
@@ -195,11 +211,13 @@ Secrets are similar to ConfigMaps but are designed to hold sensitive information
 <details><summary>show solution</summary>
 <p>
 
-**Step 1: Create a Secret using the imperative approach**
+**Step 1: Create a Secret with sensitive data**
 
 ```bash
 kubectl create secret generic db-credentials --from-literal=username=admin --from-literal=password=supersecret
 ```
+
+> Note: This is using the imperative command syntax, which is the recommended approach for creating Secrets in the CKAD exam.
 
 **Step 2: Verify the Secret**
 
@@ -299,6 +317,10 @@ MjU0MjdaMB4xHDAaBgNVBAMME3d3dy5leGFtcGxlY29tLmNvbTCCASIwDQYJKoZI
 ```bash
 kubectl create secret tls example-tls --key=tls.key --cert=tls.crt
 ```
+
+> Note: This is using the imperative command syntax for creating TLS secrets. Other types of secrets can be created with:
+> - `kubectl create secret generic` - for generic secrets from files or literal values
+> - `kubectl create secret docker-registry` - for Docker registry credentials
 
 **Step 3: Verify the Secret**
 
@@ -465,17 +487,30 @@ You should see the values `10` and `standard` being printed every 10 seconds.
 
 **Step 4: Update the ConfigMap**
 
+Option 1: Using the edit command (interactive):
 ```bash
 kubectl edit configmap dynamic-config
 ```
 
 Change the values to:
-
 ```yaml
 data:
   INTERVAL: "30"
   MODE: "advanced"
 ```
+
+Option 2: Using imperative commands (non-interactive):
+```bash
+kubectl patch configmap dynamic-config -p '{"data":{"INTERVAL":"30","MODE":"advanced"}}'
+```
+
+Option 3: Using delete and recreate approach:
+```bash
+kubectl delete configmap dynamic-config
+kubectl create configmap dynamic-config --from-literal=INTERVAL=30 --from-literal=MODE=advanced
+```
+
+> Note: The patch command is particularly useful for automation and scripting scenarios.
 
 **Step 5: Wait a moment and observe the Pod logs**
 

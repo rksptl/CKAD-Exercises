@@ -11,6 +11,27 @@ This section covers Kubernetes Network Policies, which provide security controls
 
 Network Policies in Kubernetes allow you to control the traffic flow between Pods and between Pods and external endpoints. They act as a firewall for Pods, specifying which traffic is allowed and which is denied.
 
+## Imperative vs. Declarative Approaches for Network Policies
+
+**Important Note for CKAD Exam:** Network Policies can **only** be created using declarative YAML manifests. There are no imperative commands available for creating Network Policies. This is a key distinction for the CKAD exam.
+
+**Declarative Approach (Required):**
+- Network Policies must be defined in YAML manifests
+- Apply the manifests using `kubectl apply -f policy.yaml`
+- This is the only approach available for Network Policies
+
+**Supporting Resources (Can use Imperative Commands):**
+- While Network Policies themselves require YAML, the resources they protect can be created imperatively:
+  - Create namespaces: `kubectl create namespace`
+  - Create pods: `kubectl run`
+  - Create deployments: `kubectl create deployment`
+  - Create services: `kubectl expose`
+
+**Hybrid Workflow for CKAD Exam:**
+1. Create supporting resources (pods, deployments, services) using imperative commands
+2. Create Network Policies using YAML manifests
+3. Test the policies using imperative commands like `kubectl exec`
+
 ## Key Concepts
 
 - **Network Policy**: A specification of how groups of Pods are allowed to communicate with each other and other network endpoints
@@ -41,8 +62,18 @@ kubectl create namespace policy-test
 **Step 2: Create a Pod in the namespace**
 
 ```bash
-kubectl run web --image=nginx --namespace=policy-test --labels=app=web --expose --port=80
+# Create pod with label using imperative command
+kubectl run web --image=nginx --namespace=policy-test --labels=app=web --port=80
+
+# Create service for the pod using imperative command
+kubectl expose pod web --namespace=policy-test --port=80
 ```
+
+> **CKAD Exam Tip:** While Network Policies require YAML manifests, you can create all the supporting resources (pods, services) using imperative commands to save time. The imperative commands shown here are much faster than writing YAML for these basic resources.
+> 
+> Alternative approaches:
+> - `kubectl run web --image=nginx --namespace=policy-test --labels=app=web --port=80 --expose` (creates both pod and service)
+> - Generate a service YAML: `kubectl expose pod web --namespace=policy-test --port=80 --dry-run=client -o yaml > service.yaml`
 
 **Step 3: Verify that the Pod is accessible**
 
@@ -53,6 +84,8 @@ kubectl run test-pod --namespace=policy-test --image=busybox:1.36 --rm -it -- wg
 You should see the HTML output from the nginx server.
 
 **Step 4: Create a default deny Network Policy**
+
+> **Important for CKAD Exam:** Network Policies must be created using YAML manifests as there are no imperative commands available for creating them. Unlike many other Kubernetes resources, there is no `kubectl create networkpolicy` command. You must write the YAML manifest and apply it with `kubectl apply -f`.
 
 Create a file named `default-deny.yaml` with the following content:
 
@@ -73,6 +106,8 @@ spec:
 ```bash
 kubectl apply -f default-deny.yaml
 ```
+
+> **CKAD Exam Tip:** There is no imperative alternative to this step. Network Policies must always be created using YAML manifests and applied with `kubectl apply -f`. Remember this distinction when planning your approach to network security questions in the exam.
 
 **Step 6: Verify that the Pod is no longer accessible**
 
@@ -107,17 +142,27 @@ This command should time out, indicating that the traffic is blocked.
 **Step 1: Create a web server Deployment and Service**
 
 ```bash
+# Create namespace using imperative command
 kubectl create namespace web-policy
+
+# Create deployment using imperative command
 kubectl create deployment web --image=nginx --namespace=web-policy --labels=app=web
+
+# Create service using imperative command
 kubectl expose deployment web --namespace=web-policy --port=80
 ```
+
+> Note: These are all using the imperative command syntax, which is recommended for the CKAD exam for quickly creating resources.
 
 **Step 2: Create client Deployments with different labels**
 
 ```bash
+# Create client deployments with different labels using imperative commands
 kubectl create deployment allowed-client --image=busybox:1.36 --namespace=web-policy --labels=app=client,access=allowed -- sleep 3600
 kubectl create deployment blocked-client --image=busybox:1.36 --namespace=web-policy --labels=app=client,access=blocked -- sleep 3600
 ```
+
+> Note: The kubectl create deployment command allows you to set multiple labels using comma-separated key=value pairs, which is very useful for the CKAD exam.
 
 **Step 3: Verify that both clients can access the web server**
 
@@ -129,6 +174,8 @@ kubectl exec -n web-policy deployment/blocked-client -- wget -qO- --timeout=5 we
 Both commands should return the HTML output from the nginx server.
 
 **Step 4: Create a Network Policy that allows traffic only from allowed clients**
+
+> Note: For Network Policies, you must use YAML manifests. There is no imperative command equivalent in kubectl for creating Network Policies. Understanding how to write these manifests is essential for the CKAD exam.
 
 Create a file named `web-allow-policy.yaml` with the following content:
 
@@ -512,7 +559,39 @@ kubectl run web --image=nginx --namespace=ip-policy --labels=app=web
 kubectl expose pod web --namespace=ip-policy --port=80 --type=NodePort
 ```
 
-**Step 3: Create a Network Policy that allows traffic from specific IP ranges**
+**Step 3: Create a Network Policy that allows traffic from specific Pods**
+
+Create a file named `web-allow-policy.yaml` with the following content:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: web-allow-from-pods
+  namespace: ip-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: web
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          access: allowed
+    ports:
+    - protocol: TCP
+      port: 80
+```
+
+**Step 4: Apply the Network Policy**
+
+```bash
+kubectl apply -f web-allow-policy.yaml
+```
+
+**Step 5: Create a Network Policy that allows traffic from specific IP ranges**
 
 Create a file named `ip-policy.yaml` with the following content:
 

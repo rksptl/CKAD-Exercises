@@ -12,6 +12,16 @@ This section covers multi-container Pod design patterns, which are essential for
 
 In Kubernetes, a Pod is the smallest deployable unit that can contain one or more containers. While many Pods contain only a single container, there are several design patterns where multiple containers within a single Pod provide significant benefits for application architecture.
 
+## Imperative vs. Declarative Approaches for Multi-Container Pods
+
+**Important Note for CKAD Exam:** Multi-container pods can only be created using declarative YAML manifests. There is no direct imperative command to create pods with multiple containers. However, you can use a hybrid approach:
+
+1. **Generate a basic Pod YAML** using imperative commands with `--dry-run=client -o yaml`
+2. **Edit the generated YAML** to add additional containers and configurations
+3. **Apply the modified YAML** to create the multi-container Pod
+
+This hybrid approach is often useful in the CKAD exam when you need to create multi-container pods quickly.
+
 ## Key Concepts
 
 - **Pod**: The smallest deployable unit in Kubernetes, containing one or more containers that share network namespace and can optionally share volumes
@@ -46,22 +56,27 @@ metadata:
     app: web-server
 spec:
   containers:
-  - name: nginx
-    image: nginx:1.21
-    ports:
-    - containerPort: 80
-    volumeMounts:
-    - name: logs-volume
-      mountPath: /var/log/nginx
-  - name: log-sidecar
-    image: busybox:1.36
-    command: ["/bin/sh", "-c", "while true; do cat /var/log/nginx/access.log; sleep 10; done"]
-    volumeMounts:
-    - name: logs-volume
-      mountPath: /var/log/nginx
+    - name: nginx
+      image: nginx:1.21
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: logs-volume
+          mountPath: /var/log/nginx
+    - name: log-sidecar
+      image: busybox:1.36
+      command:
+        [
+          "/bin/sh",
+          "-c",
+          "while true; do cat /var/log/nginx/access.log; sleep 10; done",
+        ]
+      volumeMounts:
+        - name: logs-volume
+          mountPath: /var/log/nginx
   volumes:
-  - name: logs-volume
-    emptyDir: {}
+    - name: logs-volume
+      emptyDir: {}
 ```
 
 **Step 2: Create the Pod**
@@ -117,20 +132,25 @@ metadata:
     app: ambassador-example
 spec:
   containers:
-  - name: app
-    image: busybox:1.36
-    command: ["/bin/sh", "-c", "while true; do wget -q -O- http://localhost:9000; sleep 5; done"]
-  - name: ambassador
-    image: nginx:1.21
-    ports:
-    - containerPort: 9000
-    volumeMounts:
-    - name: nginx-config
-      mountPath: /etc/nginx/conf.d
+    - name: app
+      image: busybox:1.36
+      command:
+        [
+          "/bin/sh",
+          "-c",
+          "while true; do wget -q -O- http://localhost:9000; sleep 5; done",
+        ]
+    - name: ambassador
+      image: nginx:1.21
+      ports:
+        - containerPort: 9000
+      volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
   volumes:
-  - name: nginx-config
-    configMap:
-      name: ambassador-config
+    - name: nginx-config
+      configMap:
+        name: ambassador-config
 ```
 
 **Step 2: Create a ConfigMap for the ambassador's configuration**
@@ -161,10 +181,12 @@ kubectl apply -f ambassador-config.yaml
 kubectl apply -f ambassador-pod.yaml
 ```
 
-**Step 4: Check the logs from the app container**
+> Note: The ambassador pattern requires a manifest file as it involves multiple containers with specific configurations.
+
+**Step 4: Check the logs from the ambassador container**
 
 ```bash
-kubectl logs ambassador-pod -c app
+kubectl logs ambassador-pod -c ambassador
 ```
 
 **What this does**:
@@ -202,28 +224,55 @@ metadata:
     app: adapter-example
 spec:
   containers:
-  - name: app
-    image: busybox:1.36
-    command: ["/bin/sh", "-c", "while true; do echo '{\"timestamp\": \"'$(date +%s)'\", \"message\": \"Sample log entry\"}' >> /var/log/app.log; sleep 5; done"]
-    volumeMounts:
-    - name: log-volume
-      mountPath: /var/log
-  - name: adapter
-    image: busybox:1.36
-    command: ["/bin/sh", "-c", "tail -f /var/log/app.log | while read line; do echo \"$(date -Iseconds) - Transformed: $line\"; done"]
-    volumeMounts:
-    - name: log-volume
-      mountPath: /var/log
+    - name: app
+      image: busybox:1.36
+      command:
+        [
+          "/bin/sh",
+          "-c",
+          'while true; do echo ''{"timestamp": "''$(date +%s)''", "message": "Sample log entry"}'' >> /var/log/app.log; sleep 5; done',
+        ]
+      volumeMounts:
+        - name: log-volume
+          mountPath: /var/log
+    - name: adapter
+      image: busybox:1.36
+      command:
+        [
+          "/bin/sh",
+          "-c",
+          'tail -f /var/log/app.log | while read line; do echo "$(date -Iseconds) - Transformed: $line"; done',
+        ]
+      volumeMounts:
+        - name: log-volume
+          mountPath: /var/log
   volumes:
-  - name: log-volume
-    emptyDir: {}
+    - name: log-volume
+      emptyDir: {}
 ```
 
 **Step 2: Create the Pod**
 
+Hybrid approach (imperative + declarative):
 ```bash
+# Generate the basic pod template with one container
+kubectl run adapter-pod --image=busybox:1.36 --labels="app=adapter-example" --dry-run=client -o yaml > adapter-pod.yaml
+
+# Edit the generated YAML to add the adapter container and volume configurations
+# vim adapter-pod.yaml
+
+# Apply the completed multi-container pod manifest
 kubectl apply -f adapter-pod.yaml
 ```
+
+> Note: This hybrid approach is very useful in the CKAD exam. You can quickly generate a basic pod template using imperative commands, then modify it to add additional containers and configurations.
+
+> Note: The `kubectl run` command can only create single-container pods. For multi-container pods, we must use the hybrid approach:
+> 1. Generate a basic pod template with `kubectl run --dry-run=client -o yaml`
+> 2. Edit the generated YAML to add additional containers
+> 3. Apply the modified YAML with `kubectl apply -f`
+> 
+> This workflow is essential to understand for the CKAD exam, as it combines the speed of imperative commands with the flexibility of declarative manifests.
 
 **Step 3: Check the logs from both containers**
 
@@ -267,25 +316,35 @@ metadata:
     app: init-example
 spec:
   initContainers:
-  - name: init-service
-    image: busybox:1.36
-    command: ['sh', '-c', 'until nslookup kubernetes.default; do echo waiting for kubernetes service; sleep 2; done;']
-  - name: init-config
-    image: busybox:1.36
-    command: ['sh', '-c', 'echo "Configuration data" > /config/config.txt']
-    volumeMounts:
-    - name: config-volume
-      mountPath: /config
+    - name: init-service
+      image: busybox:1.36
+      command:
+        [
+          "sh",
+          "-c",
+          "until nslookup kubernetes.default; do echo waiting for kubernetes service; sleep 2; done;",
+        ]
+    - name: init-config
+      image: busybox:1.36
+      command: ["sh", "-c", 'echo "Configuration data" > /config/config.txt']
+      volumeMounts:
+        - name: config-volume
+          mountPath: /config
   containers:
-  - name: app
-    image: busybox:1.36
-    command: ['sh', '-c', 'cat /config/config.txt; echo "Application running..."; sleep 3600']
-    volumeMounts:
-    - name: config-volume
-      mountPath: /config
+    - name: app
+      image: busybox:1.36
+      command:
+        [
+          "sh",
+          "-c",
+          'cat /config/config.txt; echo "Application running..."; sleep 3600',
+        ]
+      volumeMounts:
+        - name: config-volume
+          mountPath: /config
   volumes:
-  - name: config-volume
-    emptyDir: {}
+    - name: config-volume
+      emptyDir: {}
 ```
 
 **Step 2: Create the Pod**
@@ -293,6 +352,8 @@ spec:
 ```bash
 kubectl apply -f init-container-pod.yaml
 ```
+
+> Note: Pods with init containers must be created using manifest files as there is no direct imperative command for this pattern. You can use the hybrid approach by generating a basic pod template with `kubectl run --dry-run=client -o yaml` and then adding the init containers section to the generated YAML.
 
 **Step 3: Watch the Pod status**
 
@@ -342,25 +403,35 @@ metadata:
     app: shared-example
 spec:
   containers:
-  - name: web-server
-    image: nginx:1.21
-    ports:
-    - containerPort: 80
-    volumeMounts:
-    - name: html-volume
-      mountPath: /usr/share/nginx/html
-  - name: content-creator
-    image: busybox:1.36
-    command: ["/bin/sh", "-c", "while true; do echo $(date) > /html/index.html; sleep 10; done"]
-    volumeMounts:
-    - name: html-volume
-      mountPath: /html
-  - name: request-maker
-    image: busybox:1.36
-    command: ["/bin/sh", "-c", "while true; do wget -q -O- http://localhost:80; sleep 5; done"]
+    - name: web-server
+      image: nginx:1.21
+      ports:
+        - containerPort: 80
+      volumeMounts:
+        - name: html-volume
+          mountPath: /usr/share/nginx/html
+    - name: content-creator
+      image: busybox:1.36
+      command:
+        [
+          "/bin/sh",
+          "-c",
+          "while true; do echo $(date) > /html/index.html; sleep 10; done",
+        ]
+      volumeMounts:
+        - name: html-volume
+          mountPath: /html
+    - name: request-maker
+      image: busybox:1.36
+      command:
+        [
+          "/bin/sh",
+          "-c",
+          "while true; do wget -q -O- http://localhost:80; sleep 5; done",
+        ]
   volumes:
-  - name: html-volume
-    emptyDir: {}
+    - name: html-volume
+      emptyDir: {}
 ```
 
 **Step 2: Create the Pod**
@@ -368,6 +439,8 @@ spec:
 ```bash
 kubectl apply -f shared-resources-pod.yaml
 ```
+
+> Note: Pods with shared resources across multiple containers require manifest files as there is no imperative command to create this complex structure. For the CKAD exam, remember that all multi-container pod patterns (sidecar, ambassador, adapter, init containers) require the declarative approach or the hybrid approach of generating a template imperatively and then modifying it.
 
 **Step 3: Check the logs from the request-maker container**
 

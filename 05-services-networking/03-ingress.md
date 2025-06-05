@@ -84,6 +84,18 @@ You should see the ingress-nginx-controller service with a LoadBalancer or NodeP
 
 **Step 1: Create a Deployment and Service**
 
+Option 1: Using imperative commands:
+
+```bash
+# Create the deployment with imperative command
+kubectl create deployment web-app --image=nginx:1.21 --replicas=2 --port=80
+
+# Create the service with imperative command
+kubectl expose deployment web-app --name=web-service --port=80 --target-port=80
+```
+
+Option 2: Using a manifest file (declarative approach):
+
 Create a file named `web-deployment.yaml` with the following content:
 
 ```yaml
@@ -127,7 +139,11 @@ spec:
 kubectl apply -f web-deployment.yaml
 ```
 
+> Note: While Deployments and Services can be created with imperative commands, Ingress resources require YAML manifests.
+
 **Step 3: Create an Ingress resource**
+
+> Note: Ingress resources must be created using YAML manifests as there are no imperative commands available for creating them in kubectl. This is an important distinction for the CKAD exam.
 
 Create a file named `web-ingress.yaml` with the following content:
 
@@ -614,6 +630,8 @@ kubectl describe ingress annotated-ingress
 
 **Step 1: Create two versions of an application**
 
+> Note: For this complex scenario with multiple related resources, a declarative YAML approach is more practical than imperative commands, though the individual Deployments and Services could be created imperatively if needed.
+
 Create a file named `canary-deployments.yaml` with the following content:
 
 ```yaml
@@ -709,9 +727,12 @@ spec:
 **Step 2: Create ConfigMaps for the HTML content**
 
 ```bash
+# Create ConfigMaps using imperative commands
 kubectl create configmap v1-html --from-literal=index.html="<html><body><h1>Version 1</h1></body></html>"
 kubectl create configmap v2-html --from-literal=index.html="<html><body><h1>Version 2</h1></body></html>"
 ```
+
+> Note: This is using the imperative command syntax for creating ConfigMaps, which is efficient for the CKAD exam.
 
 **Step 3: Apply the Deployments and Services**
 

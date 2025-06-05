@@ -11,6 +11,23 @@ This section covers Kubernetes Probes, which are used to monitor container healt
 
 Kubernetes Probes allow you to customize how Kubernetes determines the health of your containers. They help ensure that traffic is only sent to healthy containers and that unhealthy containers are restarted automatically.
 
+## Imperative vs. Declarative Probe Configuration
+
+Probes in Kubernetes can be configured using both declarative YAML manifests and imperative commands with some limitations:
+
+**Declarative Approach (YAML manifests):**
+- Provides full control over all probe parameters
+- Required for complex probe configurations
+- Better for version control and GitOps workflows
+- Recommended for most production scenarios
+
+**Imperative Approach:**
+- The `kubectl run` and `kubectl create deployment` commands don't directly support adding probes
+- A common workflow is to generate a basic Pod/Deployment YAML using imperative commands with `--dry-run=client -o yaml`, then edit the YAML to add probe configurations
+- This hybrid approach is useful for quick prototyping and in exam scenarios
+
+> Note: For the CKAD exam, you should be comfortable with both approaches, but especially with the hybrid approach of generating YAML templates imperatively and then adding probe configurations.
+
 ## Key Concepts
 
 - **Liveness Probe**: Determines if a container is running properly; if it fails, the container is restarted
@@ -33,6 +50,8 @@ Kubernetes Probes allow you to customize how Kubernetes determines the health of
 <p>
 
 **Step 1: Create a Pod with an HTTP liveness probe**
+
+Option 1: Using a manifest file (declarative approach):
 
 Create a file named `liveness-http.yaml` with the following content:
 
@@ -60,6 +79,25 @@ spec:
 ```bash
 kubectl apply -f liveness-http.yaml
 ```
+
+Option 2: Using kubectl run with probe parameters (imperative approach):
+
+```bash
+kubectl run liveness-http --image=k8s.gcr.io/liveness --port=8080 \
+  --dry-run=client -o yaml > liveness-http.yaml
+```
+
+Then edit the generated YAML to add the liveness probe and apply it:
+
+```bash
+# Edit the file to add the livenessProbe section
+vim liveness-http.yaml
+
+# Apply the updated configuration
+kubectl apply -f liveness-http.yaml
+```
+
+> Note: While kubectl run doesn't directly support adding probes in the command line, you can generate the basic Pod YAML and then add the probe configuration. This is a common workflow in the CKAD exam.
 
 **Step 3: Watch the Pod status**
 
@@ -144,13 +182,15 @@ After about 30 seconds, the file `/tmp/healthy` will be removed, causing the liv
 
 **Step 1: Create a Deployment with a readiness probe**
 
+Option 1: Using a manifest file (declarative approach):
+
 Create a file named `readiness-deployment.yaml` with the following content:
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: readiness-deployment
+  name: readiness-test
 spec:
   replicas: 3
   selector:
@@ -162,7 +202,7 @@ spec:
         app: readiness-test
     spec:
       containers:
-      - name: nginx
+      - name: web
         image: nginx:1.21
         ports:
         - containerPort: 80
@@ -180,7 +220,25 @@ spec:
 kubectl apply -f readiness-deployment.yaml
 ```
 
+Option 2: Using kubectl create deployment with probe parameters (imperative approach):
+
+```bash
+# Generate the basic deployment YAML
+kubectl create deployment readiness-test --image=nginx:1.21 --port=80 \
+  --replicas=3 --dry-run=client -o yaml > readiness-deployment.yaml
+
+# Edit the file to add the readinessProbe section
+vim readiness-deployment.yaml
+
+# Apply the updated configuration
+kubectl apply -f readiness-deployment.yaml
+```
+
+> Note: For Deployments with probes, the imperative approach typically involves generating the YAML template first, then adding the probe configuration before applying.
+
 **Step 3: Create a Service for the Deployment**
+
+Option 1: Using a manifest file (declarative approach):
 
 Create a file named `readiness-service.yaml` with the following content:
 
@@ -199,9 +257,23 @@ spec:
 
 **Step 4: Apply the Service**
 
+Option 1: Using a manifest file (declarative approach):
 ```bash
 kubectl apply -f readiness-service.yaml
 ```
+
+Option 2: Using imperative commands:
+```bash
+kubectl expose deployment readiness-test --name=readiness-service --port=80 --target-port=80
+```
+
+Option 2: Using kubectl expose command (imperative approach):
+
+```bash
+kubectl expose deployment readiness-test --name=readiness-service --port=80 --target-port=80
+```
+
+> Note: The imperative `kubectl expose` command is a quick way to create a Service for an existing Deployment, which is useful in the CKAD exam.
 
 **Step 5: Watch the Pod status**
 
@@ -232,7 +304,7 @@ metadata:
     app: readiness-test
 spec:
   containers:
-  - name: nginx
+  - name: web
     image: nginx:1.21
     ports:
     - containerPort: 80
@@ -292,6 +364,8 @@ You should see that the failing Pod is not included in the Service endpoints.
 
 **Step 1: Create a Pod with a startup probe**
 
+Option 1: Using a manifest file (declarative approach):
+
 Create a file named `startup-probe.yaml` with the following content:
 
 ```yaml
@@ -301,7 +375,7 @@ metadata:
   name: startup-probe
 spec:
   containers:
-  - name: nginx
+  - name: app
     image: nginx:1.21
     ports:
     - containerPort: 80
@@ -316,11 +390,15 @@ spec:
         path: /
         port: 80
       periodSeconds: 10
+      timeoutSeconds: 1
+      failureThreshold: 3
     readinessProbe:
       httpGet:
         path: /
         port: 80
-      periodSeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 1
+      successThreshold: 2
 ```
 
 **Step 2: Apply the Pod configuration**
@@ -328,6 +406,22 @@ spec:
 ```bash
 kubectl apply -f startup-probe.yaml
 ```
+
+Option 2: Using kubectl run with probe parameters (imperative + declarative approach):
+
+```bash
+# Generate the basic pod YAML
+kubectl run startup-probe --image=nginx:1.21 --port=80 \
+  --dry-run=client -o yaml > startup-probe.yaml
+
+# Edit the file to add all three probe types
+vim startup-probe.yaml
+
+# Apply the updated configuration
+kubectl apply -f startup-probe.yaml
+```
+
+> Note: For pods with multiple probe types (startup, liveness, readiness), you'll need to edit the generated YAML to add all the probe configurations. This combined approach is efficient for the CKAD exam.
 
 **Step 3: Watch the Pod status**
 
@@ -441,9 +535,17 @@ spec:
 
 **Step 5: Apply the Service**
 
+Option 1: Using a manifest file (declarative approach):
 ```bash
 kubectl apply -f combined-probes-service.yaml
 ```
+
+Option 2: Using imperative commands:
+```bash
+kubectl expose deployment combined-probes --name=combined-probes-service --port=80 --target-port=80
+```
+
+> Note: While the service can be created imperatively, the probes in the deployment must be configured using a manifest file as imperative commands don't support probe configuration.
 
 **What this does**:
 
@@ -474,6 +576,8 @@ kubectl apply -f combined-probes-service.yaml
 
 **Step 1: Create a Pod with a TCP socket probe**
 
+Option 1: Using a manifest file (declarative approach):
+
 Create a file named `tcp-probe.yaml` with the following content:
 
 ```yaml
@@ -501,9 +605,45 @@ spec:
 
 **Step 2: Apply the Pod configuration**
 
+Option 1: Using a manifest file (declarative approach):
 ```bash
 kubectl apply -f tcp-probe.yaml
 ```
+
+Option 2: Using imperative + declarative approach (hybrid):
+```bash
+# Generate the basic pod YAML
+kubectl run tcp-probe --image=redis:6 --port=6379 --dry-run=client -o yaml > tcp-probe.yaml
+
+# Edit the file to add the TCP socket probe
+# Add the following under the container spec:
+#   livenessProbe:
+#     tcpSocket:
+#       port: 6379
+#     initialDelaySeconds: 15
+#     periodSeconds: 10
+
+# Apply the updated configuration
+kubectl apply -f tcp-probe.yaml
+```
+
+> Note: This hybrid approach of generating a template with imperative commands and then adding probe configurations is very useful for the CKAD exam.
+
+Option 2: Using kubectl run with probe parameters (imperative + declarative approach):
+
+```bash
+# Generate the basic pod YAML
+kubectl run tcp-probe --image=redis:6.2 --port=6379 \
+  --dry-run=client -o yaml > tcp-probe.yaml
+
+# Edit the file to add the TCP socket probes
+vim tcp-probe.yaml
+
+# Apply the updated configuration
+kubectl apply -f tcp-probe.yaml
+```
+
+> Note: TCP socket probes are useful for applications where you want to check if a port is open and accepting connections, without making an actual HTTP request.
 
 **Step 3: Watch the Pod status**
 

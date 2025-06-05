@@ -36,6 +36,16 @@ Effective logging and monitoring are critical for understanding application beha
 
 **Step 1: Create a Pod that generates logs**
 
+Option 1: Using imperative command (for simple cases):
+
+```bash
+# Create a Pod with an imperative command
+# Note: Complex shell scripts with multiple conditions are better suited for manifest files
+kubectl run logging-pod --image=busybox:1.36 --restart=Never -- /bin/sh -c 'i=0; while true; do echo "$(date) - INFO: Counter: $i"; i=$((i+1)); if [ $((i % 10)) -eq 0 ]; then echo "$(date) - WARN: Counter reached multiple of 10: $i"; fi; if [ $((i % 50)) -eq 0 ]; then echo "$(date) - ERROR: Counter reached multiple of 50: $i"; fi; sleep 1; done'
+```
+
+Option 2: Using a manifest file (recommended for complex commands):
+
 Create a file named `logging-pod.yaml` with the following content:
 
 ```yaml
@@ -67,9 +77,13 @@ spec:
 
 **Step 2: Apply the Pod configuration**
 
+If using the manifest file approach:
+
 ```bash
 kubectl apply -f logging-pod.yaml
 ```
+
+> Note: For the CKAD exam, the imperative command is faster to type but can be error-prone for complex commands. The manifest approach is more reliable for complex scenarios.
 
 **Step 3: View the Pod logs**
 
@@ -136,6 +150,8 @@ kubectl logs --tail=20 logging-pod
 <p>
 
 **Step 1: Create a Pod with multiple containers**
+
+> Note: Multi-container pods must be created using YAML manifests as there are no imperative commands that can create multiple containers in a single pod. This is an important distinction for the CKAD exam.
 
 Create a file named `multi-container-logging.yaml` with the following content:
 
@@ -232,6 +248,8 @@ kubectl logs multi-container-pod -c main-app --previous
 <p>
 
 **Step 1: Create a Pod that generates structured logs**
+
+> Note: For complex logging scenarios like structured JSON logging, a manifest file is the most practical approach, though you could use `kubectl run` with a very long command string.
 
 Create a file named `structured-logging.yaml` with the following content:
 
@@ -331,7 +349,23 @@ kubectl logs structured-logging | grep "\"component\":\"database\""
 
 Note: In a real Kubernetes cluster, you would need to deploy the Metrics Server if it's not already installed. For the purpose of this exercise, we'll assume it's already installed.
 
-**Step 2: Create Pods with different resource profiles**
+**Step 1: Create Pods with different resource profiles**
+
+Option 1: Using imperative commands:
+
+```bash
+# Create CPU-intensive Pod with imperative command
+kubectl run cpu-intensive --image=busybox:1.36 --restart=Never --labels="app=resource-demo" \
+  --requests="cpu=100m,memory=64Mi" --limits="cpu=200m,memory=128Mi" \
+  -- /bin/sh -c 'while true; do for i in $(seq 1 10000); do echo "$i" > /dev/null; done; done'
+
+# Create Memory-intensive Pod with imperative command
+kubectl run memory-intensive --image=busybox:1.36 --restart=Never --labels="app=resource-demo" \
+  --requests="cpu=50m,memory=128Mi" --limits="cpu=100m,memory=256Mi" \
+  -- /bin/sh -c 'while true; do x=$(dd if=/dev/zero bs=1M count=10 | md5sum); sleep 5; done'
+```
+
+Option 2: Using a manifest file (more readable for complex configurations):
 
 Create a file named `resource-monitoring.yaml` with the following content:
 
@@ -393,12 +427,16 @@ spec:
 **Step 3: Apply the Pod configurations**
 
 ```bash
+# If using the manifest file approach
 kubectl apply -f resource-monitoring.yaml
+
+# If using the imperative commands, they would have already created the pods
 ```
 
 **Step 4: Monitor Pod resource usage**
 
 ```bash
+# This is an imperative command to view pod resource usage
 kubectl top pods
 ```
 
@@ -449,6 +487,8 @@ kubectl top pods --containers=true
 **Step 1: Create a simple application that exposes metrics**
 
 Note: In a real scenario, you would use Prometheus client libraries to expose metrics from your application. For this exercise, we'll simulate this with a simple script.
+
+> Note: For applications with custom metrics and annotations, a manifest file is the recommended approach, though you could use `kubectl run` with annotations added later via `kubectl annotate`.
 
 Create a file named `custom-metrics.yaml` with the following content:
 
@@ -505,9 +545,15 @@ spec:
 kubectl apply -f custom-metrics.yaml
 ```
 
+> Note: While you could create a basic pod with `kubectl run`, the annotations and complex script in this example make a manifest file more practical. After creating a basic pod, you could add annotations with:
+> ```bash
+> kubectl annotate pod custom-metrics-demo prometheus.io/scrape=true prometheus.io/port=8080 prometheus.io/path=/metrics
+> ```
+
 **Step 3: Port-forward to access the metrics endpoint**
 
 ```bash
+# This is an imperative command to forward local port 8080 to the pod's port 8080
 kubectl port-forward custom-metrics-demo 8080:8080
 ```
 

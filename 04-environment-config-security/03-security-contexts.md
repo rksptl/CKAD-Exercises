@@ -33,6 +33,19 @@ Security Contexts allow you to define privilege and access control settings for 
 
 **Step 1: Create a Pod with a security context that specifies user and group IDs**
 
+> Note: Security contexts with multiple settings like user IDs, group IDs, and volume mounts are best defined using manifest files. While basic security settings can be set imperatively, complex security configurations require the declarative approach.
+
+Option 1: Using imperative command for a simple security context (limited functionality):
+
+```bash
+# Create a pod with a specific user ID (limited security context options)
+kubectl run security-context-demo --image=busybox --restart=Never \
+  --overrides='{"spec":{"securityContext":{"runAsUser":1000}}}' \
+  -- sh -c "sleep 3600"
+```
+
+Option 2: Using a manifest file (recommended for complete security context):
+
 Create a file named `pod-user-context.yaml`:
 
 ```yaml
@@ -106,6 +119,8 @@ This ensures that the container runs with non-root privileges and that any files
 <p>
 
 **Step 1: Create a Pod with different security contexts for each container**
+
+> Note: Multi-container pods with different security contexts must be created using YAML manifests as there are no imperative commands that can set different security contexts for multiple containers in a single pod.
 
 Create a file named `pod-container-context.yaml`:
 
@@ -440,6 +455,8 @@ This ensures that the Pod runs with the specified SELinux context, which can hel
 
 **Step 1: Create a Pod with a comprehensive security context**
 
+> Note: Complex security configurations with multiple settings at both pod and container levels must be created using YAML manifests. The imperative approach is not suitable for this level of complexity.
+
 Create a file named `pod-comprehensive-security.yaml`:
 
 ```yaml
@@ -482,6 +499,8 @@ Apply the configuration:
 ```bash
 kubectl apply -f pod-comprehensive-security.yaml
 ```
+
+> Note: For the CKAD exam, it's important to understand that security contexts are typically defined in YAML manifests. While basic pods can be created imperatively, security settings generally require the declarative approach.
 
 **Step 2: Verify the user and group IDs**
 

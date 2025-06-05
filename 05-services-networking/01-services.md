@@ -12,6 +12,24 @@ This section covers Kubernetes Services, which provide networking and service di
 
 Services in Kubernetes provide a way to expose applications running on a set of Pods as a network service. They abstract the Pod IP addresses and provide a stable endpoint for clients to connect to, regardless of Pod lifecycle changes.
 
+## Imperative vs. Declarative Service Creation
+
+Kubernetes Services can be created using both imperative commands and declarative manifests:
+
+**Imperative Commands (using `kubectl expose` or `kubectl create service`):**
+
+- Quick and convenient for simple services
+- Good for testing, prototyping, and learning
+- Limited options compared to declarative approach
+- Not suitable for complex service configurations
+
+**Declarative Manifests (using YAML files):**
+
+- Provides full control over all service parameters
+- Required for complex configurations (multi-port, specific nodePort, etc.)
+- Better for version control and GitOps workflows
+- More verbose but more powerful
+
 ## Key Concepts
 
 - **Service**: An abstraction that defines a logical set of Pods and a policy to access them
@@ -57,10 +75,10 @@ spec:
         app: web-app
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.21
-        ports:
-        - containerPort: 80
+        - name: nginx
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
 ```
 
 **Step 2: Apply the Deployment**
@@ -82,15 +100,23 @@ spec:
   selector:
     app: web-app
   ports:
-  - port: 80
-    targetPort: 80
+    - port: 80
+      targetPort: 80
   type: ClusterIP
 ```
 
-**Step 4: Apply the Service**
+**Step 4: Create the Service**
+
+Option 1: Using a manifest file (declarative approach):
 
 ```bash
 kubectl apply -f web-service.yaml
+```
+
+Option 2: Using imperative commands:
+
+```bash
+kubectl expose deployment web-app --name=web-service --port=80 --target-port=80 --type=ClusterIP
 ```
 
 **Step 5: Verify the Service**
@@ -148,17 +174,30 @@ spec:
   selector:
     app: web-app
   ports:
-  - port: 80
-    targetPort: 80
-    nodePort: 30080
+    - port: 80
+      targetPort: 80
+      nodePort: 30080
   type: NodePort
 ```
 
-**Step 3: Apply the Service**
+**Step 3: Create the Service**
+
+Option 1: Using a manifest file (declarative approach):
 
 ```bash
 kubectl apply -f web-nodeport-service.yaml
 ```
+
+Option 2: Using imperative commands:
+
+```bash
+# Create a NodePort service (note: you cannot specify the nodePort with imperative commands)
+kubectl expose deployment web-app --name=web-nodeport --port=80 --target-port=80 --type=NodePort
+
+# If you need to specify the nodePort, you must use a manifest file or patch the service
+```
+
+> Note: The imperative command doesn't allow specifying the nodePort. Kubernetes will assign a random port in the NodePort range (30000-32767). If you need a specific nodePort, use a manifest file or patch the service after creation.
 
 **Step 4: Verify the Service**
 
@@ -222,15 +261,23 @@ spec:
   selector:
     app: web-app
   ports:
-  - port: 80
-    targetPort: 80
+    - port: 80
+      targetPort: 80
   type: LoadBalancer
 ```
 
-**Step 3: Apply the Service**
+**Step 3: Create the Service**
+
+Option 1: Using a manifest file (declarative approach):
 
 ```bash
 kubectl apply -f web-loadbalancer-service.yaml
+```
+
+Option 2: Using imperative commands:
+
+```bash
+kubectl expose deployment web-app --name=web-loadbalancer --port=80 --target-port=80 --type=LoadBalancer
 ```
 
 **Step 4: Verify the Service**
@@ -288,11 +335,21 @@ spec:
   externalName: database.example.com
 ```
 
-**Step 2: Apply the Service**
+**Step 2: Create the Service**
+
+Option 1: Using a manifest file (declarative approach):
 
 ```bash
 kubectl apply -f external-service.yaml
 ```
+
+Option 2: Using imperative commands:
+
+```bash
+kubectl create service externalname external-database --external-name=database.example.com
+```
+
+> Note: ExternalName services are useful for mapping external services into your Kubernetes namespace, allowing applications to use consistent naming regardless of environment.
 
 **Step 3: Verify the Service**
 
@@ -344,8 +401,8 @@ spec:
   selector:
     app: database
   ports:
-  - port: 3306
-    targetPort: 3306
+    - port: 3306
+      targetPort: 3306
 ```
 
 **Step 2: Create a StatefulSet**
@@ -369,16 +426,16 @@ spec:
         app: database
     spec:
       containers:
-      - name: mysql
-        image: mysql:8.0
-        ports:
-        - containerPort: 3306
-          name: mysql
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          value: "password"
-        - name: MYSQL_DATABASE
-          value: "testdb"
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+              name: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "password"
+            - name: MYSQL_DATABASE
+              value: "testdb"
 ```
 
 **Step 3: Apply the Service and StatefulSet**
@@ -450,10 +507,10 @@ spec:
         app: backend
     spec:
       containers:
-      - name: backend
-        image: nginx:1.21
-        ports:
-        - containerPort: 80
+        - name: backend
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
 ```
 
 Create a file named `backend-service.yaml` with the following content:
@@ -467,8 +524,8 @@ spec:
   selector:
     app: backend
   ports:
-  - port: 80
-    targetPort: 80
+    - port: 80
+      targetPort: 80
 ```
 
 **Step 2: Create a frontend Deployment and Service**
@@ -493,9 +550,14 @@ spec:
         app: frontend
     spec:
       containers:
-      - name: frontend
-        image: busybox:1.36
-        command: ["/bin/sh", "-c", "while true; do wget -q -O- http://backend-service; sleep 5; done"]
+        - name: frontend
+          image: busybox:1.36
+          command:
+            [
+              "/bin/sh",
+              "-c",
+              "while true; do wget -q -O- http://backend-service; sleep 5; done",
+            ]
 ```
 
 Create a file named `frontend-service.yaml` with the following content:
@@ -509,17 +571,30 @@ spec:
   selector:
     app: frontend
   ports:
-  - port: 80
-    targetPort: 80
+    - port: 80
+      targetPort: 80
 ```
 
-**Step 3: Apply the Deployments and Services**
+**Step 3: Create the Services**
+
+Option 1: Using manifest files (declarative approach):
 
 ```bash
-kubectl apply -f backend-deployment.yaml
+# Create backend service
 kubectl apply -f backend-service.yaml
-kubectl apply -f frontend-deployment.yaml
+
+# Create frontend service
 kubectl apply -f frontend-service.yaml
+```
+
+Option 2: Using imperative commands:
+
+```bash
+# Create backend service
+kubectl expose deployment backend --name=backend-service --port=80 --target-port=80
+
+# Create frontend service
+kubectl expose deployment frontend --name=frontend-service --port=80 --target-port=80
 ```
 
 **Step 4: Verify the Deployments and Services**
@@ -607,13 +682,13 @@ spec:
         app: multi-port-app
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.21
-        ports:
-        - containerPort: 80
-          name: http
-        - containerPort: 443
-          name: https
+        - name: nginx
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
+              name: http
+            - containerPort: 443
+              name: https
 ```
 
 **Step 2: Create a Service that exposes multiple ports**
@@ -629,20 +704,25 @@ spec:
   selector:
     app: multi-port-app
   ports:
-  - name: http
-    port: 80
-    targetPort: http
-  - name: https
-    port: 443
-    targetPort: https
+    - name: http
+      port: 80
+      targetPort: http
+    - name: https
+      port: 443
+      targetPort: https
 ```
 
-**Step 3: Apply the Deployment and Service**
+**Step 3: Create the Deployment and Service**
 
 ```bash
+# Create deployment
 kubectl apply -f multi-port-deployment.yaml
+
+# Create service (must use manifest file for multi-port services)
 kubectl apply -f multi-port-service.yaml
 ```
+
+> Note: While simple services can be created imperatively, multi-port services require a manifest file as the `kubectl expose` command doesn't support defining multiple ports.
 
 **Step 4: Verify the Deployment and Service**
 

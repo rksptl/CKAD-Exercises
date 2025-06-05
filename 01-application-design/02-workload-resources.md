@@ -293,6 +293,15 @@ kubectl apply -f backup-cronjob.yaml
 
 Option 2: Using imperative commands:
 ```bash
+# Create a basic CronJob with imperative command
+kubectl create cronjob backup-database --image=mysql:8.0 --schedule="0 * * * *" -- bash -c "echo 'Starting backup'; sleep 5; echo 'Backup completed'"
+
+# Note: For complex CronJobs with environment variables from secrets, volume mounts, or other advanced features,
+# the declarative approach with a manifest file is recommended
+```
+
+Option 2: Using imperative commands:
+```bash
 kubectl create cronjob database-backup --image=backup-tool:1.2 --schedule="0 * * * *" -- /backup.sh
 ```
 

@@ -6,6 +6,13 @@ A comprehensive set of exercises to help prepare for the [Certified Kubernetes A
 
 These exercises serve as practical learning resources for mastering Kubernetes application development concepts. Each section includes clear goals, tasks, and explanations of why each concept matters in real-world scenarios.
 
+## Key Features
+
+- **Docker and containerd Focus**: All container examples use Docker and containerd (with nerdctl) as the container runtimes
+- **Imperative Commands**: Where possible, exercises include both imperative command options and declarative manifest-based approaches
+- **Meaningful Resource Names**: All examples use descriptive, meaningful names for resources to improve clarity
+- **Exam-Aligned Content**: Exercises closely match the tasks you'll encounter in the actual CKAD exam
+
 ## About the CKAD Exam
 
 - **Duration**: 2 hours
@@ -72,15 +79,17 @@ Each exercise follows a consistent format:
 3. **Why this matters**: Real-world context for the concept
 4. **Solution**: Step-by-step instructions (hidden by default)
 
-Exercises include practical YAML manifests and kubectl commands that you can use directly in your Kubernetes environment.
+Exercises include both imperative kubectl commands and declarative YAML manifests where appropriate, with clear guidance on when to use each approach. Container examples use both Docker and containerd (nerdctl) commands for flexibility.
 
 ## Study Tips
 
 1. **Practice hands-on**: Set up a local Kubernetes environment (Minikube, Kind, or k3s)
 2. **Time yourself**: Practice completing tasks within time constraints
-3. **Use kubectl efficiently**: Learn shortcuts and kubectl command syntax
-4. **Understand YAML**: Practice writing Kubernetes manifests without relying on examples
-5. **Focus on troubleshooting**: Practice debugging common issues
+3. **Master imperative commands**: Learn to create resources quickly using kubectl imperative commands
+4. **Know when to use YAML**: Understand which resources require manifest files and which can be created imperatively
+5. **Use kubectl efficiently**: Learn shortcuts and kubectl command syntax
+6. **Understand YAML**: Practice writing Kubernetes manifests without relying on examples
+7. **Focus on troubleshooting**: Practice debugging common issues
 
 ## Contributing
 
