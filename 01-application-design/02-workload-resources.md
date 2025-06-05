@@ -73,8 +73,15 @@ spec:
 
 **Step 2: Create the Deployment**
 
+Option 1: Using a manifest file (declarative approach):
 ```bash
 kubectl apply -f nginx-deployment.yaml
+```
+
+Option 2: Using imperative commands:
+```bash
+kubectl create deployment nginx-deployment --image=nginx:1.21 --replicas=3 --port=80
+kubectl set resources deployment nginx-deployment --requests=cpu=100m,memory=64Mi --limits=cpu=200m,memory=128Mi
 ```
 
 **Step 3: Verify the Deployment**
@@ -112,7 +119,7 @@ kubectl describe deployment nginx-deployment
 <details><summary>show solution</summary>
 <p>
 
-**Method 1: Scale using kubectl scale command**
+**Method 1: Scale using kubectl scale command (imperative)**
 
 ```bash
 kubectl scale deployment nginx-deployment --replicas=5
@@ -206,6 +213,8 @@ spec:
 kubectl apply -f logging-daemonset.yaml
 ```
 
+> Note: DaemonSets must be created using a manifest file as there is no direct imperative command to create them.
+
 **Step 3: Verify the DaemonSet**
 
 ```bash
@@ -277,8 +286,14 @@ kubectl create secret generic db-credentials --from-literal=password=mysecretpas
 
 **Step 3: Create the CronJob**
 
+Option 1: Using a manifest file (declarative approach):
 ```bash
 kubectl apply -f backup-cronjob.yaml
+```
+
+Option 2: Using imperative commands:
+```bash
+kubectl create cronjob database-backup --image=backup-tool:1.2 --schedule="0 * * * *" -- /backup.sh
 ```
 
 **Step 4: Verify the CronJob**
@@ -341,8 +356,14 @@ spec:
 
 **Step 2: Create the Job**
 
+Option 1: Using a manifest file (declarative approach):
 ```bash
 kubectl apply -f computation-job.yaml
+```
+
+Option 2: Using imperative commands:
+```bash
+kubectl create job pi-calculation --image=perl:5.34 -- perl -Mbignum=bpi -wle "print bpi(2000)"
 ```
 
 **Step 3: Monitor the Job status**
@@ -468,12 +489,21 @@ spec:
 kubectl create secret generic mysql-credentials --from-literal=root-password=mysecretpassword
 ```
 
+> Note: This is already using the imperative command syntax.
+
 **Step 5: Create the Service and StatefulSet**
 
+For the Service:
 ```bash
-kubectl apply -f database-service.yaml
+kubectl create service clusterip database --clusterip="None" --tcp=3306:3306 --selector=app=database
+```
+
+For the StatefulSet (must use manifest file):
+```bash
 kubectl apply -f database-statefulset.yaml
 ```
+
+> Note: StatefulSets are complex resources that are best created using manifest files.
 
 **Step 6: Verify the StatefulSet**
 
