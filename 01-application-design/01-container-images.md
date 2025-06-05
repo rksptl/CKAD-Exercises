@@ -1,15 +1,21 @@
-# Container Images with Podman
+# Container Images
 
-This section covers how to use Podman to build, manage, and modify container images, which is an essential skill for the CKAD exam (7% of the exam).
+This section covers how to build, manage, and modify container images, which is an essential skill for the CKAD exam (7% of the exam). You can use either of the following container tools based on your preference:
+
+## Container Tools
+
+### Docker
+Docker is the most widely used container runtime with extensive documentation and community support. It provides a comprehensive ecosystem for building, running, and managing containers.
+
+### containerd with nerdctl
+containerd is the container runtime used by Kubernetes under the hood, and nerdctl provides a Docker-compatible CLI for containerd. Using containerd directly gives you experience with the same runtime that powers Kubernetes.
 
 ## Key Resources
 
-- [Podman Documentation](https://podman.io/docs)
+- [Docker Documentation](https://docs.docker.com/)
+- [containerd Documentation](https://containerd.io/docs/)
+- [nerdctl GitHub](https://github.com/containerd/nerdctl)
 - [Kubernetes Dockershim Removal FAQ](https://kubernetes.io/blog/2022/02/17/dockershim-faq/)
-
-## Introduction to Podman
-
-Podman (Pod Manager) is a daemonless container engine for developing, managing, and running OCI containers on Linux systems. It provides a Docker-compatible command line interface that can simply replace Docker in most use cases.
 
 ## Key Concepts
 
@@ -62,47 +68,96 @@ RUN echo "Hello, World!" > /usr/local/apache2/htdocs/index.html
 
 **Step 1: Build the image**
 
+<tabs>
+<tab name="Docker">
+
 ```bash
-:~$ podman build -t simpleapp .
+$ docker build -t simpleapp .
 STEP 1/2: FROM httpd:2.4
 STEP 2/2: RUN echo "Hello, World!" > /usr/local/apache2/htdocs/index.html
-COMMIT simpleapp
---> ef4b14a72d0
-Successfully tagged localhost/simpleapp:latest
-ef4b14a72d02ae0577eb0632d084c057777725c279e12ccf5b0c6e4ff5fd598b
+Successfully built ef4b14a72d02
+Successfully tagged simpleapp:latest
 ```
+</tab>
+<tab name="containerd/nerdctl">
+
+```bash
+$ nerdctl build -t simpleapp .
+[+] Building 2.3s (5/5) FINISHED
+ => [internal] load build definition from Dockerfile
+ => => transferring dockerfile: 115B
+ => [internal] load .dockerignore
+ => => transferring context: 2B
+ => [1/2] FROM docker.io/library/httpd:2.4
+ => [2/2] RUN echo "Hello, World!" > /usr/local/apache2/htdocs/index.html
+ => exporting to image
+ => => exporting layers
+ => => writing image sha256:ef4b14a72d02ae0577eb0632d084c057777725c279e12ccf5b0c6e4ff5fd598b
+ => => naming to docker.io/library/simpleapp:latest
+```
+</tab>
+</tabs>
 
 **Step 2: List the available images**
 
+<tabs>
+<tab name="Docker">
+
 ```bash
-:~$ podman images
-REPOSITORY               TAG         IMAGE ID      CREATED        SIZE
-localhost/simpleapp      latest      ef4b14a72d02  8 seconds ago  148 MB
-docker.io/library/httpd  2.4         98f93cd0ec3b  7 days ago     148 MB
+$ docker images
+REPOSITORY    TAG       IMAGE ID       CREATED         SIZE
+simpleapp     latest    ef4b14a72d02   8 seconds ago   148MB
+httpd         2.4       98f93cd0ec3b   7 days ago      148MB
 ```
+</tab>
+<tab name="containerd/nerdctl">
+
+```bash
+$ nerdctl images
+REPOSITORY    TAG       IMAGE ID       CREATED         SIZE
+simpleapp     latest    ef4b14a72d02   8 seconds ago   148MB
+httpd         2.4       98f93cd0ec3b   7 days ago      148MB
+```
+</tab>
+</tabs>
 
 **Step 3: Inspect the image layers**
 
+<tabs>
+<tab name="Docker">
+
 ```bash
-:~$ podman image tree localhost/simpleapp:latest
-Image ID: ef4b14a72d02
-Tags:     [localhost/simpleapp:latest]
-Size:     147.8MB
-Image Layers
-├── ID: ad6562704f37 Size:  83.9MB
-├── ID: c234616e1912 Size: 3.072kB
-├── ID: c23a797b2d04 Size: 2.721MB
-├── ID: ede2e092faf0 Size: 61.11MB
-├── ID: 971c2cdf3872 Size: 3.584kB Top Layer of: [docker.io/library/httpd:2.4]
-└── ID: 61644e82ef1f Size: 6.144kB Top Layer of: [localhost/simpleapp:latest]
+$ docker image inspect simpleapp --format '{{.RootFS.Layers}}'
+[sha256:ad6562704f37 sha256:c234616e1912 sha256:c23a797b2d04 sha256:ede2e092faf0 sha256:971c2cdf3872 sha256:61644e82ef1f]
 ```
+</tab>
+<tab name="containerd/nerdctl">
+
+```bash
+$ nerdctl image inspect simpleapp -f '{{.RootFS.Layers}}'
+[sha256:ad6562704f37 sha256:c234616e1912 sha256:c23a797b2d04 sha256:ede2e092faf0 sha256:971c2cdf3872 sha256:61644e82ef1f]
+```
+</tab>
+</tabs>
 
 **What this does**:
 
-- `podman build -t simpleapp .` - Builds an image from the Dockerfile in the current directory and tags it as "simpleapp"
-- `podman images` - Lists all images available locally
-- `podman image tree` - Shows the layered structure of the image, with each layer representing a step in the Dockerfile
-- The output shows that our custom image adds just one small layer (6.144kB) on top of the httpd base image
+<tabs>
+<tab name="Docker">
+
+- `docker build -t simpleapp .` - Builds an image from the Dockerfile in the current directory and tags it as "simpleapp"
+- `docker images` - Lists all images available locally
+- `docker image inspect` - Shows detailed information about the image, including layers
+- The output shows that our custom image adds just one small layer on top of the httpd base image
+</tab>
+<tab name="containerd/nerdctl">
+
+- `nerdctl build -t simpleapp .` - Builds an image from the Dockerfile in the current directory and tags it as "simpleapp"
+- `nerdctl images` - Lists all images available locally
+- `nerdctl image inspect` - Shows detailed information about the image, including layers
+- The output shows that our custom image adds just one small layer on top of the httpd base image
+</tab>
+</tabs>
 
 </p>
 </details>
@@ -120,42 +175,94 @@ Image Layers
 
 **Step 1: Run the container in the background**
 
+<tabs>
+<tab name="Docker">
+
 ```bash
-:~$ podman run -d --name test -p 8080:80 localhost/simpleapp
+$ docker run -d --name test -p 8080:80 simpleapp
 2f3d7d613ea6ba19703811d30704d4025123c7302ff6fa295affc9bd30e532f8
 ```
+</tab>
+<tab name="containerd/nerdctl">
+
+```bash
+$ nerdctl run -d --name test -p 8080:80 simpleapp
+2f3d7d613ea6ba19703811d30704d4025123c7302ff6fa295affc9bd30e532f8
+```
+</tab>
+</tabs>
 
 **Step 2: Check the running container**
 
+<tabs>
+<tab name="Docker">
+
 ```bash
-:~$ podman ps
-CONTAINER ID  IMAGE                       COMMAND           CREATED        STATUS            PORTS                 NAMES
-2f3d7d613ea6  localhost/simpleapp:latest  httpd-foreground  5 seconds ago  Up 6 seconds ago  0.0.0.0:8080->80/tcp  test
+$ docker ps
+CONTAINER ID   IMAGE       COMMAND            CREATED        STATUS        PORTS                  NAMES
+2f3d7d613ea6   simpleapp   "httpd-foreground" 5 seconds ago  Up 5 seconds  0.0.0.0:8080->80/tcp   test
 ```
+</tab>
+<tab name="containerd/nerdctl">
+
+```bash
+$ nerdctl ps
+CONTAINER ID   IMAGE       COMMAND            CREATED        STATUS        PORTS                  NAMES
+2f3d7d613ea6   simpleapp   "httpd-foreground" 5 seconds ago  Up 5 seconds  0.0.0.0:8080->80/tcp   test
+```
+</tab>
+</tabs>
 
 **Step 3: Test the web server**
 
 ```bash
-:~$ curl http://localhost:8080
+$ curl http://localhost:8080
 Hello, World!
 ```
 
 **What this does**:
 
-- `podman run -d` - Runs the container in detached mode (in the background)
+<tabs>
+<tab name="Docker">
+
+- `docker run -d` - Runs the container in detached mode (in the background)
 - `--name test` - Gives the container a name for easy reference
 - `-p 8080:80` - Maps port 8080 on the host to port 80 in the container
-- `localhost/simpleapp` - Specifies the image to use
-- `podman ps` - Shows running containers
+- `simpleapp` - Specifies the image to use
+- `docker ps` - Shows running containers
+</tab>
+<tab name="containerd/nerdctl">
+
+- `nerdctl run -d` - Runs the container in detached mode (in the background)
+- `--name test` - Gives the container a name for easy reference
+- `-p 8080:80` - Maps port 8080 on the host to port 80 in the container
+- `simpleapp` - Specifies the image to use
+- `nerdctl ps` - Shows running containers
+</tab>
+</tabs>
+
 - `curl http://localhost:8080` - Tests that the web server is responding correctly
 
 **Additional useful commands**:
 
-- `podman stop test` - Stops the running container
-- `podman start test` - Starts a stopped container
-- `podman rm test` - Removes the container (must be stopped first)
-- `podman logs test` - Shows the logs from the container
-- `curl 0.0.0.0:8080` - Tests that the web server is responding correctly with our custom page
+<tabs>
+<tab name="Docker">
+
+- `docker stop test` - Stops the running container
+- `docker start test` - Starts a stopped container
+- `docker rm test` - Removes the container (must be stopped first)
+- `docker logs test` - Shows the logs from the container
+</tab>
+<tab name="containerd/nerdctl">
+
+- `nerdctl stop test` - Stops the running container
+- `nerdctl start test` - Starts a stopped container
+- `nerdctl rm test` - Removes the container (must be stopped first)
+- `nerdctl logs test` - Shows the logs from the container
+</tab>
+</tabs>
+
+- `curl localhost:8080` - Tests that the web server is responding correctly with our custom page
 
 </p>
 </details>
