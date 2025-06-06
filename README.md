@@ -30,6 +30,7 @@ During the exam, you are only allowed to refer to official documentation from a 
 - [Workload Resources](01-application-design/02-workload-resources.md)
 - [Multi-Container Pods](01-application-design/03-multi-container-pods.md)
 - [Volumes](01-application-design/04-volumes.md)
+- [Basic Volume Concepts](01-application-design/05-basic-volume-concepts.md)
 
 ### 2. Application Deployment (20%)
 
@@ -49,6 +50,9 @@ During the exam, you are only allowed to refer to official documentation from a 
 - [Configuration Management](04-environment-config-security/02-configuration-management.md)
 - [Security Contexts](04-environment-config-security/03-security-contexts.md)
 - [Resource Requirements](04-environment-config-security/04-resource-requirements.md)
+- [Service Accounts](04-environment-config-security/05-service-accounts.md)
+- [Persistent Volumes](04-environment-config-security/06-persistent-volumes.md)
+- [Storage Classes](04-environment-config-security/07-storage-classes.md)
 
 ### 5. Services and Networking (20%)
 
@@ -56,15 +60,9 @@ During the exam, you are only allowed to refer to official documentation from a 
 - [Network Policies](05-services-networking/02-network-policies.md)
 - [Ingress](05-services-networking/03-ingress.md)
 
-### 6. State Persistence (10%)
+### 6. Helm Package Manager (Additional Content)
 
-- [Volumes](06-state-persistence/01-volumes.md)
-- [Persistent Volumes](06-state-persistence/02-persistent-volumes.md)
-- [Storage Classes](06-state-persistence/03-storage-classes.md)
-
-### 7. Helm Package Manager (Additional Content)
-
-- [Helm Basics](07-helm-package-manager/01-helm-basics.md)
+- [Helm Basics](06-helm-package-manager/01-helm-basics.md)
 
 ## Repository Organization
 
