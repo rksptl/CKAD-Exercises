@@ -22,6 +22,20 @@ Kubernetes Services can be created using both imperative commands and declarativ
 - Good for testing, prototyping, and learning
 - Limited options compared to declarative approach
 - Not suitable for complex service configurations
+- **CKAD Exam Tip:** Use these for faster service creation during the exam when possible
+
+**Common Imperative Service Commands:**
+
+```bash
+# Expose a deployment as a service
+kubectl expose deployment <deployment-name> --name=<service-name> --port=<service-port> --target-port=<container-port> --type=<service-type>
+
+# Expose a pod as a service
+kubectl expose pod <pod-name> --name=<service-name> --port=<service-port> --type=<service-type>
+
+# Create a service directly (less common)
+kubectl create service clusterip <service-name> --tcp=<service-port>:<target-port>
+```
 
 **Declarative Manifests (using YAML files):**
 
@@ -29,6 +43,7 @@ Kubernetes Services can be created using both imperative commands and declarativ
 - Required for complex configurations (multi-port, specific nodePort, etc.)
 - Better for version control and GitOps workflows
 - More verbose but more powerful
+- **CKAD Exam Tip:** Use the hybrid approach - generate a basic service YAML with `kubectl expose --dry-run=client -o yaml` then modify as needed
 
 ## Key Concepts
 
@@ -107,17 +122,35 @@ spec:
 
 **Step 4: Create the Service**
 
-Option 1: Using a manifest file (declarative approach):
+Option 1: Using imperative commands (recommended for CKAD exam):
+
+```bash
+# Expose the deployment as a ClusterIP service
+kubectl expose deployment web-app --name=web-service --port=80 --target-port=80 --type=ClusterIP
+
+# Alternative using kubectl create service
+kubectl create service clusterip web-service --tcp=80:80 --selector=app=web-app
+```
+
+> **CKAD Exam Tip:** The imperative command is much faster to type and less error-prone for simple services. For ClusterIP services, both `kubectl expose` and `kubectl create service` work well.
+
+Option 2: Using a manifest file (declarative approach):
 
 ```bash
 kubectl apply -f web-service.yaml
 ```
 
-Option 2: Using imperative commands:
+Option 3: Hybrid approach (generate YAML template imperatively, then apply):
 
 ```bash
-kubectl expose deployment web-app --name=web-service --port=80 --target-port=80 --type=ClusterIP
+# Generate service YAML
+kubectl expose deployment web-app --name=web-service --port=80 --target-port=80 --type=ClusterIP --dry-run=client -o yaml > web-service.yaml
+
+# Apply the generated YAML
+kubectl apply -f web-service.yaml
 ```
+
+> **CKAD Exam Tip:** The hybrid approach is useful when you need to make small modifications to a service definition but don't want to write the entire YAML from scratch.
 
 **Step 5: Verify the Service**
 
@@ -595,6 +628,10 @@ kubectl expose deployment backend --name=backend-service --port=80 --target-port
 
 # Create frontend service
 kubectl expose deployment frontend --name=frontend-service --port=80 --target-port=80
+
+# Alternative: Create services with labels
+kubectl expose deployment backend --name=backend-service --port=80 --target-port=80 --labels=role=backend,tier=app
+kubectl expose deployment frontend --name=frontend-service --port=80 --target-port=80 --labels=role=frontend,tier=app
 ```
 
 **Step 4: Verify the Deployments and Services**
@@ -722,7 +759,7 @@ kubectl apply -f multi-port-deployment.yaml
 kubectl apply -f multi-port-service.yaml
 ```
 
-> Note: While simple services can be created imperatively, multi-port services require a manifest file as the `kubectl expose` command doesn't support defining multiple ports.
+> **Important for CKAD Exam:** While simple services can be created imperatively, multi-port services **require** a manifest file as the `kubectl expose` and `kubectl create service` commands don't support defining multiple ports. This is a key limitation to remember during the exam - if a service needs multiple ports, you must use a YAML manifest.
 
 **Step 4: Verify the Deployment and Service**
 

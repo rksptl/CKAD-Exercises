@@ -12,6 +12,30 @@ This section covers various deployment strategies in Kubernetes, which are essen
 
 Deployment strategies define how updates are rolled out to your application. Kubernetes provides several built-in strategies, and you can implement more advanced patterns as needed. Choosing the right strategy depends on your application's requirements for availability, risk tolerance, and user experience during updates.
 
+### Imperative vs. Declarative Approaches
+
+For the CKAD exam, it's important to understand both imperative and declarative approaches to creating and managing Deployments:
+
+**Imperative Commands (Quick and Efficient):**
+```bash
+# Create a deployment imperatively
+kubectl create deployment nginx-deploy --image=nginx:1.20 --replicas=3
+
+# Scale a deployment
+kubectl scale deployment nginx-deploy --replicas=5
+
+# Update a deployment's image
+kubectl set image deployment/nginx-deploy nginx=nginx:1.21
+
+# Generate a deployment YAML template (hybrid approach)
+kubectl create deployment nginx-deploy --image=nginx:1.20 --replicas=3 --dry-run=client -o yaml > deployment.yaml
+```
+
+**Declarative Approach (More Control):**
+Create a YAML file and apply it with `kubectl apply -f deployment.yaml`
+
+> **CKAD Exam Tip:** For simple deployments, use imperative commands to save time. For complex configurations or specific deployment strategies, use the hybrid approach (generate template with `--dry-run=client -o yaml` and modify as needed).
+
 ## Key Concepts
 
 - **Rolling Updates**: Gradually replace old instances with new ones
@@ -68,9 +92,22 @@ spec:
 
 **Step 2: Create the Deployment**
 
+Option 1: Using declarative approach (with the YAML file):
 ```bash
 kubectl apply -f app-deployment.yaml
 ```
+
+Option 2: Using imperative commands (quicker for CKAD exam):
+```bash
+# Create a basic deployment with 4 replicas
+kubectl create deployment web-app --image=nginx:1.20 --replicas=4
+
+# Update the deployment strategy (note: this requires editing the deployment)
+kubectl edit deployment web-app
+# Then modify the strategy section in the editor
+```
+
+> **CKAD Exam Tip:** The imperative command doesn't allow setting the deployment strategy directly. For specific strategies, either use the declarative approach or create a basic deployment imperatively and then edit it.
 
 **Step 3: Verify the Deployment**
 
@@ -82,8 +119,20 @@ kubectl get pods -l app=web-app
 **Step 4: Update the Deployment to use a new image version**
 
 ```bash
+# Update the image using set image command
 kubectl set image deployment/web-app nginx=nginx:1.21
+
+# Alternative methods:
+
+# Method 1: Edit the deployment directly
+kubectl edit deployment/web-app
+# Then change the image version in the editor
+
+# Method 2: Using patch command
+kubectl patch deployment web-app --patch '{"spec":{"template":{"spec":{"containers":[{"name":"nginx","image":"nginx:1.21"}]}}}}'
 ```
+
+> **CKAD Exam Tip:** The `kubectl set image` command is the fastest way to update a container image during the exam. Remember the exact syntax as it's commonly needed.
 
 **Step 5: Watch the rolling update in progress**
 
@@ -124,8 +173,14 @@ kubectl describe deployment web-app
 **Step 1: Check the current revision history**
 
 ```bash
+# View basic revision history
 kubectl rollout history deployment/web-app
+
+# View details of a specific revision
+kubectl rollout history deployment/web-app --revision=2
 ```
+
+> **CKAD Exam Tip:** Understanding rollout history is crucial for rollback operations. Each update creates a new revision that can be referenced by number.
 
 **Step 2: Update the Deployment to a problematic version**
 
@@ -136,8 +191,17 @@ kubectl set image deployment/web-app nginx=nginx:nonexistent
 **Step 3: Check the status of the rollout**
 
 ```bash
+# Check rollout status
 kubectl rollout status deployment/web-app
+
+# View detailed information about the deployment
+kubectl describe deployment web-app
+
+# Quick check of pods to see which are failing
+kubectl get pods -l app=web-app
 ```
+
+> **CKAD Exam Tip:** When troubleshooting failed deployments, always check both the deployment status and the actual pods. Look for ImagePullBackOff or CrashLoopBackOff errors in the pods.
 
 You'll notice the rollout gets stuck because the image doesn't exist.
 
@@ -149,11 +213,24 @@ kubectl get pods -l app=web-app
 
 You should see some Pods in `ImagePullBackOff` or `ErrImagePull` state.
 
-**Step 5: Roll back to the previous revision**
+**Step 4: Roll back to the previous stable version**
 
 ```bash
+# Rollback to the previous revision
 kubectl rollout undo deployment/web-app
+
+# Rollback to a specific revision
+kubectl rollout undo deployment/web-app --to-revision=1
+
+# Pause a problematic rollout before rolling back (useful to prevent further damage)
+kubectl rollout pause deployment/web-app
+# Then perform the rollback
+kubectl rollout undo deployment/web-app
+# Resume normal operation
+kubectl rollout resume deployment/web-app
 ```
+
+> **CKAD Exam Tip:** Remember that you can roll back to a specific revision using the `--to-revision` flag. This is useful when you've made multiple updates and need to go back to a specific known-good state.
 
 **Step 6: Verify the rollback**
 
@@ -535,3 +612,54 @@ kubectl delete deployment blue-app
 
 </p>
 </details>
+
+## CKAD Exam Tips for Deployments
+
+### Imperative Command Quick Reference
+
+```bash
+# Create a deployment
+kubectl create deployment <name> --image=<image> --replicas=<number>
+
+# Scale a deployment
+kubectl scale deployment <name> --replicas=<number>
+
+# Update a deployment's image
+kubectl set image deployment/<name> <container-name>=<new-image>
+
+# Rollout commands
+kubectl rollout status deployment/<name>    # Check status
+kubectl rollout history deployment/<name>   # View revision history
+kubectl rollout undo deployment/<name>      # Rollback to previous version
+kubectl rollout pause deployment/<name>     # Pause a rollout
+kubectl rollout resume deployment/<name>    # Resume a paused rollout
+
+# Generate deployment YAML (hybrid approach)
+kubectl create deployment <name> --image=<image> --dry-run=client -o yaml > deployment.yaml
+```
+
+### When to Use Each Approach
+
+**Use Imperative Commands When:**
+- Creating simple deployments with default settings
+- Performing common operations like scaling or updating images
+- Time is limited and you need to create resources quickly
+
+**Use Declarative YAML When:**
+- Configuring specific deployment strategies (Rolling Update parameters, Recreate)
+- Setting up complex deployments with multiple containers, volumes, etc.
+- Implementing advanced patterns like Canary or Blue/Green deployments
+
+**Use the Hybrid Approach When:**
+- You need a starting point for a complex configuration
+- You want to avoid syntax errors in your YAML
+- You need to make minor modifications to a standard deployment
+
+### Exam Time-Saving Tips
+
+1. **Use imperative commands for basic deployments** - they're faster than writing YAML
+2. **Remember key flags** like `--replicas`, `--image`, and `--port` for the create command
+3. **Use `kubectl set image`** for updating container images - it's faster than editing the deployment
+4. **Know the rollout commands** for checking status and performing rollbacks
+5. **For complex strategies**, generate a template with `--dry-run=client -o yaml` and modify it
+6. **Use labels effectively** for selecting and managing related resources

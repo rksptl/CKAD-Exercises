@@ -25,10 +25,28 @@ ConfigMaps allow you to decouple configuration artifacts from image content to k
 **Step 1: Create a ConfigMap using the imperative approach**
 
 ```bash
+# Basic ConfigMap with key-value pairs
 kubectl create configmap app-config --from-literal=APP_ENV=production --from-literal=APP_DEBUG=false
+
+# Multiple ways to create ConfigMaps imperatively:
+
+# From multiple literal values
+kubectl create configmap app-settings --from-literal=APP_NAME=MyApp --from-literal=APP_ENV=staging --from-literal=LOG_LEVEL=debug
+
+# From a file (entire file becomes a single key-value pair)
+kubectl create configmap logging-config --from-file=log-settings.properties
+
+# From a file with custom key name
+kubectl create configmap custom-key-config --from-file=custom-key=config.properties
+
+# From multiple files in a directory
+kubectl create configmap multi-file-config --from-file=config-dir/
+
+# Combining different sources
+kubectl create configmap hybrid-config --from-literal=ENV=production --from-file=settings.properties
 ```
 
-> Note: This is already using the imperative command syntax, which is the recommended approach for the CKAD exam.
+> **CKAD Exam Tip:** The imperative command syntax is the fastest way to create ConfigMaps during the exam. Remember that you can combine multiple `--from-literal` and `--from-file` options in a single command to save time.
 
 **Step 2: Verify the ConfigMap**
 
@@ -86,13 +104,22 @@ kubectl apply -f pod-with-configmap-env.yaml
 
 Option 2: Using imperative commands (for simple cases):
 ```bash
+# Using jsonpath to extract values from ConfigMap
 kubectl run configmap-env-pod --image=busybox --restart=Never \
   --env="APP_ENV=$(kubectl get configmap app-config -o jsonpath='{.data.APP_ENV}')" \
   --env="APP_DEBUG=$(kubectl get configmap app-config -o jsonpath='{.data.APP_DEBUG}')" \
   -- sh -c "echo APP_ENV=$APP_ENV && echo APP_DEBUG=$APP_DEBUG && sleep 3600"
+
+# Alternative approach using environment variables from ConfigMap directly
+# This is a hybrid approach - generate YAML template first
+kubectl run configmap-env-pod2 --image=busybox --restart=Never \
+  --dry-run=client -o yaml > pod-with-env.yaml
+
+# Then edit the YAML to add ConfigMap references and apply
+# (This would be done manually in the exam)
 ```
 
-> Note: For complex environment variable configurations from ConfigMaps, the declarative approach is often clearer, but the imperative command can be useful for quick testing.
+> **CKAD Exam Tip:** For complex environment variable configurations from ConfigMaps, the declarative approach is often clearer. However, for simple pods with 1-2 environment variables, the imperative command with jsonpath extraction can save time. Remember that nested subcommands like `$(kubectl get...)` can be error-prone under time pressure, so test carefully.
 
 **Step 4: Check the Pod logs to verify the environment variables**
 
@@ -214,10 +241,35 @@ Secrets are similar to ConfigMaps but are designed to hold sensitive information
 **Step 1: Create a Secret with sensitive data**
 
 ```bash
+# Basic Secret with key-value pairs
 kubectl create secret generic db-credentials --from-literal=username=admin --from-literal=password=supersecret
+
+# Multiple ways to create Secrets imperatively:
+
+# From multiple literal values
+kubectl create secret generic api-credentials \
+  --from-literal=API_KEY=abcdef123456 \
+  --from-literal=API_SECRET=xyzpdq987654
+
+# From files (useful for certificates, keys, etc.)
+kubectl create secret generic tls-certs \
+  --from-file=tls.key \
+  --from-file=tls.crt
+
+# Creating TLS secret type (special format for TLS certificates)
+kubectl create secret tls ingress-tls \
+  --cert=path/to/tls.crt \
+  --key=path/to/tls.key
+
+# Creating Docker registry secret
+kubectl create secret docker-registry regcred \
+  --docker-server=https://index.docker.io/v1/ \
+  --docker-username=username \
+  --docker-password=password \
+  --docker-email=email@example.com
 ```
 
-> Note: This is using the imperative command syntax, which is the recommended approach for creating Secrets in the CKAD exam.
+> **CKAD Exam Tip:** Always use the imperative commands for creating Secrets in the exam - they're faster and avoid the need to manually encode values in base64. Remember that Kubernetes has different secret types (`generic`, `tls`, and `docker-registry`) with specific command formats for each.
 
 **Step 2: Verify the Secret**
 
@@ -531,3 +583,67 @@ After a short delay (usually less than a minute), you should see the values chan
 6. **Be aware that Secret values are only Base64 encoded**, not encrypted. Use additional encryption mechanisms for highly sensitive data.
 7. **Remember that updating a ConfigMap or Secret does not automatically update Pods** that use them as environment variables. You need to restart the Pods.
 8. **Use resource quotas** to limit the number and size of ConfigMaps and Secrets in a namespace.
+
+## CKAD Exam Tips for ConfigMaps and Secrets
+
+### Imperative Command Quick Reference
+
+**ConfigMaps:**
+```bash
+# Basic ConfigMap
+kubectl create configmap <name> --from-literal=<key>=<value>
+
+# From file
+kubectl create configmap <name> --from-file=<path-to-file>
+
+# From directory
+kubectl create configmap <name> --from-file=<directory-path>
+```
+
+**Secrets:**
+```bash
+# Generic Secret
+kubectl create secret generic <name> --from-literal=<key>=<value>
+
+# TLS Secret
+kubectl create secret tls <name> --cert=<path-to-cert> --key=<path-to-key>
+
+# Docker Registry Secret
+kubectl create secret docker-registry <name> --docker-server=<server> --docker-username=<username> --docker-password=<password>
+```
+
+### When to Use Each Approach
+
+**Use Imperative Commands When:**
+- Creating simple ConfigMaps and Secrets with a few key-value pairs
+- Creating resources from existing files
+- Time is limited and you need to create resources quickly
+
+**Use Declarative YAML When:**
+- You need complex configurations with many values
+- You're creating multiple related resources together
+- You need to use advanced features like immutable ConfigMaps
+
+**Use the Hybrid Approach When:**
+- You need a starting point for a complex configuration
+- You want to avoid syntax errors in your YAML
+
+```bash
+# Generate a ConfigMap YAML template
+kubectl create configmap <name> --from-literal=<key>=<value> --dry-run=client -o yaml > configmap.yaml
+
+# Generate a Secret YAML template
+kubectl create secret generic <name> --from-literal=<key>=<value> --dry-run=client -o yaml > secret.yaml
+```
+
+### Exam Time-Saving Tips
+
+1. **Use imperative commands for simple cases** - they're faster than writing YAML
+2. **Use the hybrid approach for complex cases** - generate a template and modify it
+3. **Remember that Secret values must be base64-encoded in YAML** - use imperative commands to avoid manual encoding
+4. **For environment variables from ConfigMaps/Secrets:**
+   - Use `envFrom` when you need all values
+   - Use `valueFrom` with `configMapKeyRef`/`secretKeyRef` for specific values
+5. **For volume mounts:**
+   - Mount specific keys using the `items` field
+   - Use `subPath` to avoid overwriting directories
