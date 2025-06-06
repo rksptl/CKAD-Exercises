@@ -553,3 +553,183 @@ This creates a Pod with strong security settings that follows security best prac
 6. **Apply the principle of least privilege** by giving containers only the permissions they need.
 7. **Use security contexts in combination with other security features** like NetworkPolicies, RBAC, and PodSecurityPolicies.
 8. **Regularly audit and review security contexts** to ensure they align with your security requirements.
+
+## CKAD Exam Tips for Security Contexts
+
+### Quick Reference for Security Context Settings
+
+```yaml
+# Pod-level security context
+spec:
+  securityContext:
+    runAsUser: 1000                # User ID to run all containers
+    runAsGroup: 3000               # Primary group ID
+    fsGroup: 2000                  # Group ID for volume ownership
+    supplementalGroups: [5555,6666] # Additional group memberships
+    sysctls:                       # Kernel parameters
+    - name: net.ipv4.ip_forward
+      value: "1"
+
+# Container-level security context
+spec:
+  containers:
+  - name: app
+    securityContext:
+      runAsUser: 1000              # Override pod-level setting
+      runAsNonRoot: true           # Prevent running as root
+      allowPrivilegeEscalation: false # Prevent privilege escalation
+      privileged: false            # Don't run with elevated privileges
+      readOnlyRootFilesystem: true # Make root filesystem read-only
+      capabilities:
+        add: ["NET_BIND_SERVICE"]  # Add specific capabilities
+        drop: ["ALL"]             # Drop capabilities
+      seLinuxOptions:              # SELinux context
+        level: "s0:c123,c456"
+```
+
+### Imperative vs. Declarative Approaches for Security Contexts
+
+**Important Note for CKAD Exam:** While basic pods can be created imperatively, security contexts with multiple settings are best defined using declarative YAML manifests.
+
+**Limited Imperative Options:**
+
+```bash
+# Create a pod with a basic user ID security context
+kubectl run secure-pod --image=nginx --restart=Never \
+  --overrides='{"spec":{"securityContext":{"runAsUser":1000}}}' \
+  -- sleep 3600
+
+# Create a pod with container-level security context
+kubectl run secure-pod --image=nginx --restart=Never \
+  --overrides='{"spec":{"containers":[{"name":"secure-pod","image":"nginx","securityContext":{"capabilities":{"add":["NET_ADMIN"]}}}]}}' \
+  -- sleep 3600
+```
+
+**Hybrid Approach (Recommended for CKAD):**
+
+```bash
+# Generate a basic pod YAML template
+kubectl run secure-pod --image=nginx --restart=Never --dry-run=client -o yaml > secure-pod.yaml
+
+# Then edit the YAML to add security context settings
+# This is the most practical approach for the exam
+```
+
+### Common Security Context Patterns for CKAD
+
+**1. Non-Root User Pattern:**
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: non-root-pod
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+  containers:
+  - name: app
+    image: nginx
+```
+
+**2. Read-Only Root Filesystem with Writable Volumes:**
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: readonly-pod
+spec:
+  containers:
+  - name: app
+    image: nginx
+    securityContext:
+      readOnlyRootFilesystem: true
+    volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+    - name: var-run
+      mountPath: /var/run
+  volumes:
+  - name: tmp
+    emptyDir: {}
+  - name: var-run
+    emptyDir: {}
+```
+
+**3. Dropping All Capabilities and Adding Specific Ones:**
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: limited-capabilities-pod
+spec:
+  containers:
+  - name: app
+    image: nginx
+    securityContext:
+      capabilities:
+        drop: ["ALL"]
+        add: ["NET_BIND_SERVICE"]
+```
+
+### CKAD Exam Strategy for Security Contexts
+
+1. **Remember the hierarchy**:
+   - Container-level security context settings override Pod-level settings
+   - Not all settings can be specified at both levels
+
+2. **Test your security settings**:
+   ```bash
+   # Check user/group IDs
+   kubectl exec pod-name -- id
+   
+   # Check if filesystem is read-only
+   kubectl exec pod-name -- touch /test-file
+   
+   # Check Linux capabilities
+   kubectl exec pod-name -- grep Cap /proc/1/status
+   ```
+
+3. **Troubleshoot security issues**:
+   ```bash
+   # Check pod status for security-related errors
+   kubectl describe pod pod-name
+   
+   # Check container logs
+   kubectl logs pod-name
+   ```
+
+### Time-Saving Tips for the CKAD Exam
+
+1. **Use the hybrid approach** for creating pods with security contexts:
+   ```bash
+   # Generate YAML template
+   kubectl run secure-pod --image=nginx --dry-run=client -o yaml > pod.yaml
+   
+   # Edit the YAML to add security context
+   # Apply the configuration
+   kubectl apply -f pod.yaml
+   ```
+
+2. **Remember common capability names** that might be needed in the exam:
+   - `NET_ADMIN`: Network administration
+   - `NET_BIND_SERVICE`: Bind to privileged ports (< 1024)
+   - `SYS_TIME`: Modify system time
+   - `CHOWN`: Change file ownership
+   - `DAC_OVERRIDE`: Bypass file permission checks
+
+3. **Know which directories need to be writable** when using a read-only root filesystem:
+   - `/tmp`: Temporary files
+   - `/var/run`: Runtime files
+   - `/var/log`: Log files
+   - Application-specific directories (e.g., `/var/cache/nginx` for NGINX)
+
+4. **Use meaningful names** for your security-related resources:
+   - `readonly-nginx-pod`
+   - `nonroot-web-pod`
+   - `secure-app-pod`
+
+5. **Remember that security contexts are validated at runtime**:
+   - A pod might be created successfully but fail to start if security settings are incompatible with the container
+   - Always check pod status and logs if a pod with security context doesn't start

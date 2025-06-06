@@ -16,17 +16,54 @@ Kubernetes Probes allow you to customize how Kubernetes determines the health of
 Probes in Kubernetes can be configured using both declarative YAML manifests and imperative commands with some limitations:
 
 **Declarative Approach (YAML manifests):**
+
 - Provides full control over all probe parameters
 - Required for complex probe configurations
 - Better for version control and GitOps workflows
 - Recommended for most production scenarios
 
-**Imperative Approach:**
-- The `kubectl run` and `kubectl create deployment` commands don't directly support adding probes
-- A common workflow is to generate a basic Pod/Deployment YAML using imperative commands with `--dry-run=client -o yaml`, then edit the YAML to add probe configurations
-- This hybrid approach is useful for quick prototyping and in exam scenarios
+**Imperative Approach (Hybrid Workflow for CKAD Exam):**
 
-> Note: For the CKAD exam, you should be comfortable with both approaches, but especially with the hybrid approach of generating YAML templates imperatively and then adding probe configurations.
+- The `kubectl run` and `kubectl create deployment` commands don't directly support adding probes
+- Use the hybrid approach for efficiency in the CKAD exam:
+
+```bash
+# Generate Pod YAML template
+kubectl run nginx-with-probes --image=nginx --port=80 --dry-run=client -o yaml > pod-with-probes.yaml
+
+# Generate Deployment YAML template
+kubectl create deployment nginx-with-probes --image=nginx --replicas=3 --port=80 --dry-run=client -o yaml > deployment-with-probes.yaml
+```
+
+Then edit the generated YAML to add probe configurations. For the CKAD exam, you should memorize these common probe configurations:
+
+```yaml
+# HTTP Liveness Probe
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 10
+
+# TCP Readiness Probe
+readinessProbe:
+  tcpSocket:
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+# Exec Startup Probe
+startupProbe:
+  exec:
+    command:
+      - cat
+      - /tmp/healthy
+  failureThreshold: 30
+  periodSeconds: 10
+```
+
+> **CKAD Exam Tip:** For the exam, focus on mastering the hybrid approach - generate YAML templates imperatively and then add probe configurations. This saves time while giving you full control over probe parameters. Remember that you can't add probes directly with imperative commands, but you can quickly generate a template and modify it.
 
 ## Key Concepts
 
@@ -62,16 +99,16 @@ metadata:
   name: liveness-http
 spec:
   containers:
-  - name: liveness
-    image: k8s.gcr.io/liveness
-    ports:
-    - containerPort: 8080
-    livenessProbe:
-      httpGet:
-        path: /healthz
-        port: 8080
-      initialDelaySeconds: 3
-      periodSeconds: 3
+    - name: liveness
+      image: k8s.gcr.io/liveness
+      ports:
+        - containerPort: 8080
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 8080
+        initialDelaySeconds: 3
+        periodSeconds: 3
 ```
 
 **Step 2: Apply the Pod configuration**
@@ -126,19 +163,19 @@ metadata:
   name: liveness-exec
 spec:
   containers:
-  - name: liveness
-    image: busybox:1.36
-    args:
-    - /bin/sh
-    - -c
-    - touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600
-    livenessProbe:
-      exec:
-        command:
-        - cat
-        - /tmp/healthy
-      initialDelaySeconds: 5
-      periodSeconds: 5
+    - name: liveness
+      image: busybox:1.36
+      args:
+        - /bin/sh
+        - -c
+        - touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600
+      livenessProbe:
+        exec:
+          command:
+            - cat
+            - /tmp/healthy
+        initialDelaySeconds: 5
+        periodSeconds: 5
 ```
 
 **Step 6: Apply the Pod configuration**
@@ -202,16 +239,16 @@ spec:
         app: readiness-test
     spec:
       containers:
-      - name: web
-        image: nginx:1.21
-        ports:
-        - containerPort: 80
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 5
-          periodSeconds: 5
+        - name: web
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
 ```
 
 **Step 2: Apply the Deployment**
@@ -251,18 +288,20 @@ spec:
   selector:
     app: readiness-test
   ports:
-  - port: 80
-    targetPort: 80
+    - port: 80
+      targetPort: 80
 ```
 
 **Step 4: Apply the Service**
 
 Option 1: Using a manifest file (declarative approach):
+
 ```bash
 kubectl apply -f readiness-service.yaml
 ```
 
 Option 2: Using imperative commands:
+
 ```bash
 kubectl expose deployment readiness-test --name=readiness-service --port=80 --target-port=80
 ```
@@ -304,16 +343,16 @@ metadata:
     app: readiness-test
 spec:
   containers:
-  - name: web
-    image: nginx:1.21
-    ports:
-    - containerPort: 80
-    readinessProbe:
-      httpGet:
-        path: /non-existent-path
-        port: 80
-      initialDelaySeconds: 5
-      periodSeconds: 5
+    - name: web
+      image: nginx:1.21
+      ports:
+        - containerPort: 80
+      readinessProbe:
+        httpGet:
+          path: /non-existent-path
+          port: 80
+        initialDelaySeconds: 5
+        periodSeconds: 5
 ```
 
 **Step 8: Apply the Pod configuration**
@@ -375,30 +414,30 @@ metadata:
   name: startup-probe
 spec:
   containers:
-  - name: app
-    image: nginx:1.21
-    ports:
-    - containerPort: 80
-    startupProbe:
-      httpGet:
-        path: /
-        port: 80
-      failureThreshold: 30
-      periodSeconds: 10
-    livenessProbe:
-      httpGet:
-        path: /
-        port: 80
-      periodSeconds: 10
-      timeoutSeconds: 1
-      failureThreshold: 3
-    readinessProbe:
-      httpGet:
-        path: /
-        port: 80
-      periodSeconds: 5
-      timeoutSeconds: 1
-      successThreshold: 2
+    - name: app
+      image: nginx:1.21
+      ports:
+        - containerPort: 80
+      startupProbe:
+        httpGet:
+          path: /
+          port: 80
+        failureThreshold: 30
+        periodSeconds: 10
+      livenessProbe:
+        httpGet:
+          path: /
+          port: 80
+        periodSeconds: 10
+        timeoutSeconds: 1
+        failureThreshold: 3
+      readinessProbe:
+        httpGet:
+          path: /
+          port: 80
+        periodSeconds: 5
+        timeoutSeconds: 1
+        successThreshold: 2
 ```
 
 **Step 2: Apply the Pod configuration**
@@ -439,7 +478,7 @@ kubectl describe pod startup-probe
 
 - Creates a Pod with startup, liveness, and readiness probes
 - The startup probe checks if the nginx server is responding on port 80
-- The startup probe has a `failureThreshold` of 30 and a `periodSeconds` of 10, giving the container up to 300 seconds (30 * 10) to start up
+- The startup probe has a `failureThreshold` of 30 and a `periodSeconds` of 10, giving the container up to 300 seconds (30 \* 10) to start up
 - The liveness and readiness probes are disabled until the startup probe succeeds
 - Once the startup probe succeeds, the liveness and readiness probes take over
 - This demonstrates how startup probes can be used to handle applications with slow startup times
@@ -478,30 +517,30 @@ spec:
         app: combined-probes
     spec:
       containers:
-      - name: app
-        image: nginx:1.21
-        ports:
-        - containerPort: 80
-        startupProbe:
-          httpGet:
-            path: /
-            port: 80
-          failureThreshold: 30
-          periodSeconds: 10
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 80
-          periodSeconds: 10
-          timeoutSeconds: 1
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 80
-          periodSeconds: 5
-          timeoutSeconds: 1
-          successThreshold: 2
+        - name: app
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
+          startupProbe:
+            httpGet:
+              path: /
+              port: 80
+            failureThreshold: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            periodSeconds: 5
+            timeoutSeconds: 1
+            successThreshold: 2
 ```
 
 **Step 2: Apply the Deployment**
@@ -529,18 +568,20 @@ spec:
   selector:
     app: combined-probes
   ports:
-  - port: 80
-    targetPort: 80
+    - port: 80
+      targetPort: 80
 ```
 
 **Step 5: Apply the Service**
 
 Option 1: Using a manifest file (declarative approach):
+
 ```bash
 kubectl apply -f combined-probes-service.yaml
 ```
 
 Option 2: Using imperative commands:
+
 ```bash
 kubectl expose deployment combined-probes --name=combined-probes-service --port=80 --target-port=80
 ```
@@ -587,30 +628,32 @@ metadata:
   name: tcp-probe
 spec:
   containers:
-  - name: redis
-    image: redis:6.2
-    ports:
-    - containerPort: 6379
-    livenessProbe:
-      tcpSocket:
-        port: 6379
-      initialDelaySeconds: 15
-      periodSeconds: 10
-    readinessProbe:
-      tcpSocket:
-        port: 6379
-      initialDelaySeconds: 5
-      periodSeconds: 10
+    - name: redis
+      image: redis:6.2
+      ports:
+        - containerPort: 6379
+      livenessProbe:
+        tcpSocket:
+          port: 6379
+        initialDelaySeconds: 15
+        periodSeconds: 10
+      readinessProbe:
+        tcpSocket:
+          port: 6379
+        initialDelaySeconds: 5
+        periodSeconds: 10
 ```
 
 **Step 2: Apply the Pod configuration**
 
 Option 1: Using a manifest file (declarative approach):
+
 ```bash
 kubectl apply -f tcp-probe.yaml
 ```
 
 Option 2: Using imperative + declarative approach (hybrid):
+
 ```bash
 # Generate the basic pod YAML
 kubectl run tcp-probe --image=redis:6 --port=6379 --dry-run=client -o yaml > tcp-probe.yaml
@@ -691,29 +734,29 @@ metadata:
   name: exec-probe
 spec:
   containers:
-  - name: postgres
-    image: postgres:13
-    ports:
-    - containerPort: 5432
-    env:
-    - name: POSTGRES_PASSWORD
-      value: "password"
-    livenessProbe:
-      exec:
-        command:
-        - pg_isready
-        - -U
-        - postgres
-      initialDelaySeconds: 30
-      periodSeconds: 10
-    readinessProbe:
-      exec:
-        command:
-        - pg_isready
-        - -U
-        - postgres
-      initialDelaySeconds: 5
-      periodSeconds: 10
+    - name: postgres
+      image: postgres:13
+      ports:
+        - containerPort: 5432
+      env:
+        - name: POSTGRES_PASSWORD
+          value: "password"
+      livenessProbe:
+        exec:
+          command:
+            - pg_isready
+            - -U
+            - postgres
+        initialDelaySeconds: 30
+        periodSeconds: 10
+      readinessProbe:
+        exec:
+          command:
+            - pg_isready
+            - -U
+            - postgres
+        initialDelaySeconds: 5
+        periodSeconds: 10
 ```
 
 **Step 2: Apply the Pod configuration**
@@ -777,31 +820,31 @@ spec:
         app: advanced-probes
     spec:
       containers:
-      - name: app
-        image: nginx:1.21
-        ports:
-        - containerPort: 80
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 80
-            httpHeaders:
-            - name: Custom-Header
-              value: Awesome
-          initialDelaySeconds: 15
-          periodSeconds: 10
-          timeoutSeconds: 2
-          failureThreshold: 3
-          successThreshold: 1
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 80
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 1
-          failureThreshold: 2
-          successThreshold: 2
+        - name: app
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+              httpHeaders:
+                - name: Custom-Header
+                  value: Awesome
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 1
+            failureThreshold: 2
+            successThreshold: 2
 ```
 
 **Step 2: Apply the Deployment**
@@ -837,3 +880,110 @@ kubectl describe pod -l app=advanced-probes
 
 </p>
 </details>
+
+## CKAD Exam Tips for Probes
+
+### Probe Quick Reference
+
+**Common Probe Types:**
+
+```yaml
+# HTTP Probe
+httpGet:
+  path: /healthz
+  port: 8080
+  scheme: HTTP # or HTTPS
+  httpHeaders:
+    - name: Custom-Header
+      value: value
+
+# TCP Socket Probe
+tcpSocket:
+  port: 8080
+
+# Exec Probe
+exec:
+  command:
+    - cat
+    - /tmp/healthy
+```
+
+**Common Probe Parameters:**
+
+```yaml
+# All of these parameters are optional with default values
+initialDelaySeconds: 0 # Wait after container starts before first probe
+periodSeconds: 10 # How often to perform the probe
+timeoutSeconds: 1 # Probe timeout
+successThreshold: 1 # Min consecutive successes to be considered successful
+failureThreshold: 3 # Min consecutive failures to be considered failed
+```
+
+### Hybrid Approach Workflow for CKAD
+
+1. **Generate the basic resource YAML:**
+
+   ```bash
+   # For Pods
+   kubectl run myapp --image=nginx --port=80 --dry-run=client -o yaml > pod.yaml
+
+   # For Deployments
+   kubectl create deployment myapp --image=nginx --replicas=3 --dry-run=client -o yaml > deployment.yaml
+   ```
+
+2. **Edit the YAML to add probe configurations:**
+
+   ```bash
+   vim pod.yaml  # or nano, or any editor available in the exam
+   ```
+
+3. **Apply the updated configuration:**
+   ```bash
+   kubectl apply -f pod.yaml
+   ```
+
+### Probe Selection Guidelines
+
+**When to Use Each Probe Type:**
+
+- **Liveness Probe**: Use when you want Kubernetes to restart a container if it's unhealthy
+- **Readiness Probe**: Use when you want to control when a container starts receiving traffic
+- **Startup Probe**: Use for slow-starting containers to prevent premature liveness checks
+
+**Probe Handler Selection:**
+
+- **HTTP GET**: Best for web applications and REST APIs
+- **TCP Socket**: Good for databases and other TCP services
+- **Exec Command**: Best for custom health checks or non-HTTP applications
+
+### Common Exam Scenarios
+
+1. **Adding probes to existing resources:**
+
+   ```bash
+   kubectl get deployment myapp -o yaml > myapp.yaml
+   # Edit to add probes
+   kubectl apply -f myapp.yaml
+   ```
+
+2. **Debugging failing probes:**
+
+   ```bash
+   kubectl describe pod <pod-name>
+   # Look for events related to probe failures
+   ```
+
+3. **Checking probe status:**
+   ```bash
+   kubectl get pods
+   # Check the READY column - if 0/1, the readiness probe might be failing
+   ```
+
+### Time-Saving Tips
+
+1. **Keep a mental template** of common probe configurations to quickly add them
+2. **Use appropriate timeouts** - don't set them too long or you'll waste exam time
+3. **Start with readiness probes** when dealing with services that need time to initialize
+4. **Remember that probe paths are case-sensitive** - `/healthz` is not the same as `/Healthz`
+5. **Use the right port** - a common mistake is probing the wrong port
+6. **Set appropriate failure thresholds** - usually 3 for liveness and 1 for readiness

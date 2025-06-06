@@ -625,3 +625,265 @@ This helps you understand how to design your applications for different levels o
 6. **Monitor actual resource usage** and adjust requests and limits accordingly.
 7. **Be aware of the units** used for CPU and memory resources to avoid mistakes.
 8. **Use horizontal pod autoscaling** to automatically adjust the number of Pods based on resource usage.
+
+## CKAD Exam Tips for Resource Requirements
+
+### Quick Reference for Resource Requirements
+
+```yaml
+# Pod with resource requests and limits
+spec:
+  containers:
+  - name: app
+    resources:
+      requests:              # Minimum resources needed
+        cpu: 250m            # 250 millicores = 0.25 cores
+        memory: 64Mi         # 64 Mebibytes
+      limits:                # Maximum resources allowed
+        cpu: 500m            # 500 millicores = 0.5 cores
+        memory: 128Mi        # 128 Mebibytes
+```
+
+```yaml
+# ResourceQuota for namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: team-quota
+spec:
+  hard:
+    pods: "10"               # Max 10 pods
+    requests.cpu: "4"        # Max 4 CPU cores total requests
+    requests.memory: 8Gi     # Max 8 GiB memory total requests
+    limits.cpu: "8"          # Max 8 CPU cores total limits
+    limits.memory: 16Gi      # Max 16 GiB memory total limits
+```
+
+```yaml
+# LimitRange for default values
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+spec:
+  limits:
+  - type: Container
+    default:                 # Default limits if not specified
+      cpu: 500m
+      memory: 256Mi
+    defaultRequest:          # Default requests if not specified
+      cpu: 200m
+      memory: 128Mi
+    min:                     # Minimum allowed values
+      cpu: 100m
+      memory: 64Mi
+    max:                     # Maximum allowed values
+      cpu: 1
+      memory: 512Mi
+```
+
+### Imperative Command Examples
+
+**Creating Pods with Resource Requirements:**
+
+```bash
+# Basic pod with requests and limits
+kubectl run nginx --image=nginx --restart=Never \
+  --requests=cpu=250m,memory=64Mi \
+  --limits=cpu=500m,memory=128Mi
+
+# Pod with only requests (Burstable QoS)
+kubectl run nginx-burstable --image=nginx --restart=Never \
+  --requests=cpu=250m,memory=64Mi
+
+# Pod with equal requests and limits (Guaranteed QoS)
+kubectl run nginx-guaranteed --image=nginx --restart=Never \
+  --requests=cpu=500m,memory=128Mi \
+  --limits=cpu=500m,memory=128Mi
+
+# Pod with no resource specifications (BestEffort QoS)
+kubectl run nginx-besteffort --image=nginx --restart=Never
+```
+
+**Creating ResourceQuotas:**
+
+```bash
+# Create a namespace with a resource quota
+kubectl create namespace team-a
+kubectl create quota team-a-quota --namespace=team-a \
+  --hard=pods=10,requests.cpu=4,requests.memory=8Gi,limits.cpu=8,limits.memory=16Gi
+```
+
+**Creating LimitRanges:**
+
+```bash
+# LimitRanges must be created using YAML manifests
+# There's no direct imperative command for complex LimitRange creation
+# Use the hybrid approach instead:
+
+# Generate a basic LimitRange template
+kubectl create -f - <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-limits
+  namespace: team-a
+spec:
+  limits:
+  - type: Container
+    default:
+      cpu: 500m
+      memory: 256Mi
+    defaultRequest:
+      cpu: 200m
+      memory: 128Mi
+EOF
+```
+
+### Common Resource Patterns for CKAD
+
+**1. Web Application Pattern:**
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-app
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    resources:
+      requests:
+        cpu: 250m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
+```
+
+**2. Database Pattern (higher resources):**
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: database
+spec:
+  containers:
+  - name: postgres
+    image: postgres
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+      limits:
+        cpu: 1
+        memory: 1Gi
+```
+
+**3. Multi-Container Pod with Different Resource Needs:**
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multi-container
+spec:
+  containers:
+  - name: app
+    image: nginx
+    resources:
+      requests:
+        cpu: 250m
+        memory: 64Mi
+      limits:
+        cpu: 500m
+        memory: 128Mi
+  - name: sidecar
+    image: fluentd
+    resources:
+      requests:
+        cpu: 100m
+        memory: 32Mi
+      limits:
+        cpu: 200m
+        memory: 64Mi
+```
+
+### CKAD Exam Strategy for Resource Requirements
+
+1. **Know your resource units**:
+   - CPU: `m` for millicores (1000m = 1 CPU core)
+   - Memory: `Ki`, `Mi`, `Gi` for binary units (1024-based)
+   - Memory: `K`, `M`, `G` for decimal units (1000-based)
+
+2. **Understand QoS classes**:
+   - **Guaranteed**: requests = limits for both CPU and memory
+   - **Burstable**: requests < limits for either CPU or memory
+   - **BestEffort**: no requests or limits specified
+
+3. **Verify resource settings**:
+   ```bash
+   # Check resource settings for a pod
+   kubectl describe pod pod-name | grep -A 8 Resources
+   
+   # Check QoS class
+   kubectl get pod pod-name -o jsonpath='{.status.qosClass}'
+   
+   # Check resource quota usage
+   kubectl describe quota -n namespace-name
+   ```
+
+4. **Troubleshoot resource issues**:
+   ```bash
+   # Check if pod is pending due to insufficient resources
+   kubectl describe pod pod-name
+   
+   # Check if pod is being throttled due to CPU limits
+   kubectl top pod pod-name
+   
+   # Check if pod is being OOM killed due to memory limits
+   kubectl logs pod-name --previous
+   ```
+
+### Time-Saving Tips for the CKAD Exam
+
+1. **Use the imperative approach** for creating pods with resource requirements:
+   ```bash
+   kubectl run nginx --image=nginx --restart=Never \
+     --requests=cpu=250m,memory=64Mi \
+     --limits=cpu=500m,memory=128Mi
+   ```
+
+2. **Use the hybrid approach** for more complex resource configurations:
+   ```bash
+   # Generate YAML template
+   kubectl run nginx --image=nginx --restart=Never \
+     --requests=cpu=250m,memory=64Mi \
+     --dry-run=client -o yaml > pod.yaml
+   
+   # Edit the YAML to add more complex resource settings
+   # Apply the configuration
+   kubectl apply -f pod.yaml
+   ```
+
+3. **Remember common resource values** that might be needed in the exam:
+   - Small container: 100m CPU, 64Mi memory
+   - Medium container: 250m CPU, 128Mi memory
+   - Large container: 500m CPU, 256Mi memory
+
+4. **Know the relationship between ResourceQuotas and resource requirements**:
+   - Pods without resource requirements will be rejected in namespaces with ResourceQuotas
+   - ResourceQuotas enforce aggregate resource usage across all pods in a namespace
+
+5. **Remember that LimitRanges apply to new resources only**:
+   - Existing pods are not affected when you create or modify a LimitRange
+   - LimitRanges can provide default values, which simplifies pod creation
+
+6. **Use meaningful names** for your resource-related objects:
+   - `small-nginx-pod`
+   - `team-a-quota`
+   - `default-limits`
+
+7. **Be aware of resource validation timing**:
+   - Resource requests and limits are validated at pod creation time
+   - ResourceQuotas are enforced at creation time
+   - LimitRanges are applied at creation time

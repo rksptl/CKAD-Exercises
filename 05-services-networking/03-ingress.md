@@ -116,10 +116,10 @@ spec:
         app: web-app
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.21
-        ports:
-        - containerPort: 80
+        - name: nginx
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
@@ -129,8 +129,8 @@ spec:
   selector:
     app: web-app
   ports:
-  - port: 80
-    targetPort: 80
+    - port: 80
+      targetPort: 80
 ```
 
 **Step 2: Apply the Deployment and Service**
@@ -156,16 +156,16 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-  - host: example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: web-service
-            port:
-              number: 80
+    - host: example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-service
+                port:
+                  number: 80
 ```
 
 **Step 4: Apply the Ingress resource**
@@ -238,10 +238,10 @@ spec:
         app: web-app
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.21
-        ports:
-        - containerPort: 80
+        - name: nginx
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
@@ -251,8 +251,8 @@ spec:
   selector:
     app: web-app
   ports:
-  - port: 80
-    targetPort: 80
+    - port: 80
+      targetPort: 80
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -271,10 +271,10 @@ spec:
         app: api-app
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.21
-        ports:
-        - containerPort: 80
+        - name: nginx
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
 ---
 apiVersion: v1
 kind: Service
@@ -284,8 +284,8 @@ spec:
   selector:
     app: api-app
   ports:
-  - port: 80
-    targetPort: 80
+    - port: 80
+      targetPort: 80
 ```
 
 **Step 2: Apply the Deployments and Services**
@@ -307,23 +307,23 @@ metadata:
     nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   rules:
-  - host: example.com
-    http:
-      paths:
-      - path: /web(/|$)(.*)
-        pathType: Prefix
-        backend:
-          service:
-            name: web-service
-            port:
-              number: 80
-      - path: /api(/|$)(.*)
-        pathType: Prefix
-        backend:
-          service:
-            name: api-service
-            port:
-              number: 80
+    - host: example.com
+      http:
+        paths:
+          - path: /web(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: web-service
+                port:
+                  number: 80
+          - path: /api(/|$)(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 80
 ```
 
 **Step 4: Apply the Ingress resource**
@@ -389,26 +389,26 @@ metadata:
   name: name-based-ingress
 spec:
   rules:
-  - host: web.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: web-service
-            port:
-              number: 80
-  - host: api.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: api-service
-            port:
-              number: 80
+    - host: web.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-service
+                port:
+                  number: 80
+    - host: api.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 80
 ```
 
 **Step 3: Apply the Ingress resource**
@@ -491,20 +491,20 @@ metadata:
   name: tls-ingress
 spec:
   tls:
-  - hosts:
-    - example.com
-    secretName: example-tls
+    - hosts:
+        - example.com
+      secretName: example-tls
   rules:
-  - host: example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: web-service
-            port:
-              number: 80
+    - host: example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-service
+                port:
+                  number: 80
 ```
 
 **Step 4: Apply the Ingress resource**
@@ -578,16 +578,16 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
 spec:
   rules:
-  - host: example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: web-service
-            port:
-              number: 80
+    - host: example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-service
+                port:
+                  number: 80
 ```
 
 **Step 3: Apply the Ingress resource**
@@ -655,17 +655,17 @@ spec:
         version: v1
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.21
-        ports:
-        - containerPort: 80
-        volumeMounts:
-        - name: html
-          mountPath: /usr/share/nginx/html
+        - name: nginx
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
       volumes:
-      - name: html
-        configMap:
-          name: v1-html
+        - name: html
+          configMap:
+            name: v1-html
 ---
 apiVersion: v1
 kind: Service
@@ -676,8 +676,8 @@ spec:
     app: web
     version: v1
   ports:
-  - port: 80
-    targetPort: 80
+    - port: 80
+      targetPort: 80
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -699,17 +699,17 @@ spec:
         version: v2
     spec:
       containers:
-      - name: nginx
-        image: nginx:1.21
-        ports:
-        - containerPort: 80
-        volumeMounts:
-        - name: html
-          mountPath: /usr/share/nginx/html
+        - name: nginx
+          image: nginx:1.21
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
       volumes:
-      - name: html
-        configMap:
-          name: v2-html
+        - name: html
+          configMap:
+            name: v2-html
 ---
 apiVersion: v1
 kind: Service
@@ -720,8 +720,8 @@ spec:
     app: web
     version: v2
   ports:
-  - port: 80
-    targetPort: 80
+    - port: 80
+      targetPort: 80
 ```
 
 **Step 2: Create ConfigMaps for the HTML content**
@@ -751,16 +751,16 @@ metadata:
   name: web-ingress-v1
 spec:
   rules:
-  - host: example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: web-v1
-            port:
-              number: 80
+    - host: example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-v1
+                port:
+                  number: 80
 ```
 
 **Step 5: Apply the Ingress resource for the main version**
@@ -783,16 +783,16 @@ metadata:
     nginx.ingress.kubernetes.io/canary-weight: "20"
 spec:
   rules:
-  - host: example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: web-v2
-            port:
-              number: 80
+    - host: example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-v2
+                port:
+                  number: 80
 ```
 
 **Step 7: Apply the Ingress resource for the canary version**
@@ -827,3 +827,242 @@ curl -H "Host: example.com" http://INGRESS_IP
 
 </p>
 </details>
+
+## CKAD Exam Tips for Ingress Resources
+
+### Quick Reference for Ingress Structure
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+  annotations:
+    # Optional: Ingress controller specific annotations
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  # Optional: Default backend for requests that don't match any rules
+  defaultBackend:
+    service:
+      name: default-service
+      port:
+        number: 80
+  # Optional: TLS configuration
+  tls:
+    - hosts:
+        - example.com
+      secretName: example-tls-secret
+  # Routing rules
+  rules:
+    - host: example.com # Optional: Host-based routing
+      http:
+        paths:
+          - path: /app1 # Path-based routing
+            pathType: Prefix # Prefix, Exact, or ImplementationSpecific
+            backend:
+              service:
+                name: app1-service
+                port:
+                  number: 80
+          - path: /app2
+            pathType: Prefix
+            backend:
+              service:
+                name: app2-service
+                port:
+                  number: 80
+```
+
+### Imperative vs. Declarative Approaches for Ingress
+
+**Important Note for CKAD Exam:** Ingress resources can **only** be created using declarative YAML manifests. There are no imperative commands available for creating Ingress resources directly.
+
+**Hybrid Workflow for CKAD Exam:**
+
+1. Create supporting resources (deployments, services) using imperative commands:
+
+   ```bash
+   # Create a deployment
+   kubectl create deployment web --image=nginx --port=80
+
+   # Expose the deployment as a service
+   kubectl expose deployment web --name=web-service --port=80
+   ```
+
+2. Create Ingress resources using YAML manifests:
+
+   ```bash
+   # Apply an Ingress YAML
+   kubectl apply -f ingress.yaml
+   ```
+
+3. Test the Ingress using imperative commands:
+
+   ```bash
+   # Get the Ingress IP
+   kubectl get ingress
+
+   # Test with curl
+   curl -H "Host: example.com" http://INGRESS_IP
+   ```
+
+### Common Ingress Patterns for CKAD
+
+**1. Basic Host-Based Routing:**
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: host-based-routing
+spec:
+  rules:
+    - host: app1.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app1-service
+                port:
+                  number: 80
+    - host: app2.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app2-service
+                port:
+                  number: 80
+```
+
+**2. Path-Based Routing:**
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: path-based-routing
+spec:
+  rules:
+    - host: example.com
+      http:
+        paths:
+          - path: /app1
+            pathType: Prefix
+            backend:
+              service:
+                name: app1-service
+                port:
+                  number: 80
+          - path: /app2
+            pathType: Prefix
+            backend:
+              service:
+                name: app2-service
+                port:
+                  number: 80
+```
+
+**3. TLS Termination:**
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tls-ingress
+spec:
+  tls:
+    - hosts:
+        - example.com
+      secretName: example-tls
+  rules:
+    - host: example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web-service
+                port:
+                  number: 80
+```
+
+### CKAD Exam Strategy for Ingress Resources
+
+1. **Remember the prerequisites**:
+
+   - An Ingress Controller must be installed in the cluster
+   - Services must exist before creating Ingress resources that reference them
+
+2. **Test your Ingress resources**:
+
+   ```bash
+   # Get the Ingress IP
+   kubectl get ingress
+
+   # Test with curl using Host header
+   kubectl run test-pod --image=busybox:1.36 --rm -it -- wget -qO- --header="Host: example.com" http://INGRESS_IP
+   ```
+
+3. **Troubleshoot Ingress issues**:
+
+   ```bash
+   # Check Ingress status
+   kubectl describe ingress my-ingress
+
+   # Check Ingress Controller logs
+   kubectl logs -n ingress-nginx deployment/ingress-nginx-controller
+   ```
+
+4. **Remember the pathType options**:
+   - `Prefix`: Matches based on a URL path prefix
+   - `Exact`: Matches the URL path exactly
+   - `ImplementationSpecific`: Matching is up to the IngressClass
+
+### Time-Saving Tips for the CKAD Exam
+
+1. **Create a template** for common Ingress patterns and modify as needed
+
+2. **Use meaningful names** for your Ingress resources that describe their function:
+
+   - `web-ingress`
+   - `api-ingress`
+   - `host-based-ingress`
+
+3. **Remember the limitations** of Ingress resources:
+
+   - They only work with HTTP/HTTPS traffic
+   - They require an Ingress Controller to be installed
+   - Different Ingress Controllers may support different features
+
+4. **Know the common annotations** for the NGINX Ingress Controller:
+
+   - `nginx.ingress.kubernetes.io/rewrite-target`: Rewrite the URL path
+   - `nginx.ingress.kubernetes.io/ssl-redirect`: Enable/disable SSL redirect
+   - `nginx.ingress.kubernetes.io/proxy-body-size`: Set the maximum allowed request body size
+
+5. **Create supporting resources efficiently**:
+
+   ```bash
+   # Create a deployment and service in one command
+   kubectl create deployment web --image=nginx --port=80 && kubectl expose deployment web --name=web-service --port=80
+   ```
+
+6. **Generate a Secret for TLS quickly**:
+
+   ```bash
+   # Create a self-signed certificate and key
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=example.com"
+
+   # Create a Secret from the certificate and key
+   kubectl create secret tls example-tls --key tls.key --cert tls.crt
+   ```
+
+7. **Remember that Ingress resources are namespace-scoped**:
+   - They can only reference Services in the same namespace
+   - You may need to create multiple Ingress resources in different namespaces
